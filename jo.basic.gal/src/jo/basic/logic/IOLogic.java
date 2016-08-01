@@ -54,7 +54,26 @@ public class IOLogic
     {
     	File f = root;
     	for (StringTokenizer st = new StringTokenizer(fname, "/\\"); st.hasMoreTokens(); )
-    		f = new File(f, st.nextToken());
+    	{
+    		String subName = st.nextToken();
+            File test = new File(f, subName);
+    		if (test.exists())
+    		{
+    		    f = test;
+    		    continue;
+    		}
+    		// check for case
+    		boolean foundIt = false;
+    		for (File sub : f.listFiles())
+    		    if (sub.getName().equalsIgnoreCase(subName))
+    		    {
+    		        f = sub;
+    		        foundIt = true;
+    		        break;
+    		    }
+    		if (!foundIt)
+    		    throw new RuntimeException("Cannot find "+subName+" in "+f);
+    	}
     	return f;
     }
 }
