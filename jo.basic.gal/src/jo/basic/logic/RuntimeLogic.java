@@ -119,6 +119,9 @@ public class RuntimeLogic
                 case SyntaxBean.IF_GOTO:
                     executeIfGoto(ep);
                     break;
+                case SyntaxBean.IF_GOSUB:
+                    executeIfGosub(ep);
+                    break;
                 case SyntaxBean.IF_BLOCK:
                     executeIfBlock(ep);
                     break;
@@ -135,10 +138,7 @@ public class RuntimeLogic
                             return;
                         }
                         else
-                        {
-                            System.err.println(ep.line().getText());
-                            throw new RuntimeException("Unexpected RETURN, mode="+terminalCondition);
-                        }
+                            ep.error("Unexpected RETURN, mode="+terminalCondition);
                     break;
                 case SyntaxBean.SCREEN:
                     executeScreen(ep);
@@ -174,7 +174,7 @@ public class RuntimeLogic
                         return;
                     }
                     System.err.println(ep.line().getText());
-                    throw new RuntimeException("Unexpected NEXT");
+                    ep.error("Unexpected NEXT");
                 case SyntaxBean.LOOP:
                     if (terminalCondition == UNTIL_LOOP)
                     {
@@ -182,7 +182,7 @@ public class RuntimeLogic
                         return;
                     }
                     System.err.println(ep.line().getText());
-                    throw new RuntimeException("Unexpected LOOP");
+                    ep.error("Unexpected LOOP");
                 case SyntaxBean.RETURN:
                     if (terminalCondition == UNTIL_RETURN)
                     {
@@ -190,7 +190,7 @@ public class RuntimeLogic
                         return;
                     }
                     System.err.println(ep.line().getText());
-                    throw new RuntimeException("Unexpected RETURN, mode="+terminalCondition);
+                    ep.error("Unexpected RETURN, mode="+terminalCondition);
                 case SyntaxBean.ELSE:
                 case SyntaxBean.ELSEIF_BLOCK:
                     if (terminalCondition == UNTIL_END_IF)
@@ -200,7 +200,7 @@ public class RuntimeLogic
                         return;
                     }
                     System.err.println(ep.line().getText());
-                    throw new RuntimeException("Unexpected ELSE");
+                    ep.error("Unexpected ELSE");
                 case SyntaxBean.END_IF:
                     if (terminalCondition == UNTIL_END_IF)
                     {
@@ -208,33 +208,33 @@ public class RuntimeLogic
                         return;
                     }
                     System.err.println(ep.line().getText());
-                    throw new RuntimeException("Unexpected END IF");
+                    ep.error("Unexpected END IF");
                 case SyntaxBean.CASE:
                     if (terminalCondition == UNTIL_END_SELECT)
                         return;
                     System.err.println(ep.line().getText());
-                    throw new RuntimeException("Unexpected CASE");
+                    ep.error("Unexpected CASE");
                 case SyntaxBean.END_DEF:
                     if (terminalCondition == UNTIL_END_DEF)
                         return;
                     System.err.println(ep.line().getText());
-                    throw new RuntimeException("Unexpected END DEF");
+                    ep.error("Unexpected END DEF");
                 case SyntaxBean.END_SELECT:
                     if (terminalCondition == UNTIL_END_SELECT)
                         return;
                     System.err.println(ep.line().getText());
-                    throw new RuntimeException("Unexpected END_SELECT");
+                    ep.error("Unexpected END_SELECT");
                 case SyntaxBean.END_PROGRAM:
                     if (terminalCondition == UNTIL_END)
                         return;
                     System.err.println(ep.line().getText());
-                    throw new RuntimeException("Unexpected END");
+                    ep.error("Unexpected END");
                 case SyntaxBean.DEBUG:
                     executeDebug(ep);
                     break;
                 default:
                     System.err.println(ep.line().getText());
-                    throw new RuntimeException("Unhandled command #"+cmd.getType());
+                    ep.error("Unhandled command #"+cmd.getType());
             }
             if (terminalCondition == UNTIL_ONE)
                 break;
@@ -281,6 +281,12 @@ public class RuntimeLogic
             String fname = cmdline.substring(4).trim();
             File f = ep.makeFile(fname);
             ep.rt.getScreen().view(f);
+        }
+        else if (cmdline.startsWith("erase "))
+        {
+            String fname = cmdline.substring(5).trim();
+            File f = ep.makeFile(fname);
+            f.delete();
         }
         else
         {
@@ -359,12 +365,12 @@ public class RuntimeLogic
                     case TokenBean.SEMICOLON:
                         break;
                     default:
-                        throw new RuntimeException("Unknown print argument #"+((TokenBean)o).getType());
+                        ep.error("Unknown print argument #"+((TokenBean)o).getType());
                 }
             else if (o instanceof ExpressionBean)
                 txt.append(ep.evalString((ExpressionBean)o));
             else
-                throw new RuntimeException("Unknown print argument "+o);
+                ep.error("Unknown print argument "+o);
         boolean noNewline = (args.size() > 0) && (args.get(args.size() - 1) instanceof TokenBean) && (((TokenBean)args.get(args.size() - 1)).getType() == TokenBean.SEMICOLON);
         if (stream != null)
         {
@@ -378,11 +384,11 @@ public class RuntimeLogic
                 }
                 catch (IOException e)
                 {
-                    throw new RuntimeException(e);
+                    ep.error(e);
                 }
             }
             else
-                throw new RuntimeException("Stream "+stream+" not open for writing.");
+                ep.error("Stream "+stream+" not open for writing.");
         }
         else
         {
@@ -442,12 +448,12 @@ public class RuntimeLogic
                 ep.rt.getStreams()[idx] = f; // test for exists
             }
             else
-                throw new RuntimeException("Unrecognized mode "+mode);
+                ep.error("Unrecognized mode "+mode);
             ep.inc();
         }
         catch (IOException e)
         {
-            throw new RuntimeException(e);
+            ep.error(e);
         }
     }
     
@@ -466,7 +472,7 @@ public class RuntimeLogic
                     //System.out.println("Input: "+val);
                 }
                 else
-                    throw new RuntimeException("Stream #"+idx+" not for input");
+                    ep.error("Stream #"+idx+" not for input");
             }
             else
             {
@@ -479,7 +485,7 @@ public class RuntimeLogic
         }
         catch (IOException e)
         {
-            throw new RuntimeException(e);
+            ep.error(e);
         }
     }
     
@@ -504,7 +510,7 @@ public class RuntimeLogic
         }
         catch (IOException e)
         {
-            throw new RuntimeException(e);
+            ep.error(e);
         }
     }
     
@@ -535,6 +541,24 @@ public class RuntimeLogic
             String var = (String)ep.arg2();
             int step = ep.rt.getProgram().getLabels().get(var);
             ep.rt.setExecutionPoint(step);
+        }
+        else
+            ep.inc();
+    }
+    
+    private static void executeIfGosub(ExecutionPointer ep)
+    {
+        ExpressionBean expr = (ExpressionBean)ep.arg1();
+        Boolean test = BooleanUtils.parseBoolean(ep.eval(expr));
+        if (test)
+        {
+            String var = (String)ep.arg2();
+            int step = ep.rt.getProgram().getLabels().get(var);
+            ep.inc();
+            int returnPoint = ep.rt.getExecutionPoint();
+            ep.rt.setExecutionPoint(step);
+            executeSteps(ep, UNTIL_RETURN);
+            ep.rt.setExecutionPoint(returnPoint);
         }
         else
             ep.inc();
@@ -608,10 +632,10 @@ public class RuntimeLogic
         ExpressionBean expr = (ExpressionBean)ep.arg1();
         VariableBean var = (VariableBean)ep.arg2();
         if (var == null)
-            throw new RuntimeException("Expected var on IF_LET");
+            ep.error("Expected var on IF_LET");
         ExpressionBean val = (ExpressionBean)ep.arg3();
         if (val == null)
-            throw new RuntimeException("Expected val on IF_LET");
+            ep.error("Expected val on IF_LET");
         ep.inc();
         Boolean test = BooleanUtils.parseBoolean(ep.eval(expr));
         if (test)
@@ -745,7 +769,7 @@ public class RuntimeLogic
                     runThis = (val >= high);
                 }
                 else
-                    throw new RuntimeException("Unknown case");
+                    ep.error("Unknown case");
                 if (runThis)
                 {
                     executeSteps(ep, UNTIL_END_SELECT);                    
@@ -811,7 +835,7 @@ public class RuntimeLogic
         else
         {
             System.err.println(ep.line().getText());
-            throw new RuntimeException("Can't handle #"+ep.command().getType());
+            ep.error("Can't handle #"+ep.command().getType());
         }
         ep.inc();
     }

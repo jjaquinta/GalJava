@@ -235,6 +235,17 @@ public class ExprUtils
                 tok.remove(i+1);
                 tok.add(i+1, ne);
             }
+            else if ((tok.get(i).getType() == TokenBean.EQUAL) && (tok.get(i+1).getType() == TokenBean.SUBTRACT) && (tok.get(i+2).getType() == TokenBean.NUMBER))
+            {
+                TokenBean ne = new TokenBean();
+                ne.setType(TokenBean.NUMBER);
+                ne.setLine(tok.get(i).getLine());
+                ne.setCharStart(tok.get(i+1).getCharStart());
+                ne.setCharEnd(tok.get(i+2).getCharEnd());
+                tok.remove(i+1);
+                tok.remove(i+1);
+                tok.add(i+1, ne);
+            }
 //        System.out.println("After:");
 //        for (TokenBean t : tok)
 //            System.out.print(t.toString()+"#"+t.getType()+" ");

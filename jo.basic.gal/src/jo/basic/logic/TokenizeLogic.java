@@ -59,7 +59,10 @@ public class TokenizeLogic
                 if (type != null)
                     addToken(program, line, lp, ++lp, type);
                 else
+                {
+                    System.err.println(line.getText());
                     throw new IllegalStateException("Unexpected '"+text.charAt(lp)+"' at line "+line.getNumber()+" char "+lp);
+                }
             }
         }
         int endTokens = program.getTokens().size();

@@ -9,7 +9,6 @@ import jo.basic.data.SyntaxBean;
 import jo.basic.data.TokenBean;
 import jo.basic.data.VariableBean;
 import jo.basic.logic.expr.ExprUtils;
-import jo.basic.logic.expr.ExpressionEvaluationException;
 import jo.basic.logic.expr.IExprProps;
 
 public class ExecutionPointer implements IExprProps
@@ -129,7 +128,7 @@ public class ExecutionPointer implements IExprProps
                 val[idx[0]][idx[1]][idx[2]] = rvalue;
             }
             else
-                throw new RuntimeException(var.getIndicies().size()+" dimensional arrays not supported");
+                error(var.getIndicies().size()+" dimensional arrays not supported");
         }
     }
     
@@ -143,7 +142,8 @@ public class ExecutionPointer implements IExprProps
         Object val = eval(expr);
         if (val instanceof Number)
             return ((Number)val).intValue();
-        throw new RuntimeException("Expected int value, not "+val);
+        error("Expected int value, not "+val);
+        return 0;
     }
     
     public long evalLong(ExpressionBean expr)
@@ -151,7 +151,8 @@ public class ExecutionPointer implements IExprProps
         Object val = eval(expr);
         if (val instanceof Number)
             return ((Number)val).longValue();
-        throw new RuntimeException("Expected long value, not "+val);
+        error("Expected long value, not "+val);
+        return 0;
     }
     
     public String evalString(ExpressionBean expr)
@@ -164,14 +165,14 @@ public class ExecutionPointer implements IExprProps
     
     public Object eval(ExpressionBean expr)
     {
-        Object rvalue;
+        Object rvalue = null;
         try
         {
             rvalue = ExprUtils.evalObject(expr.tokens(rt.getProgram()), this);
         }
-        catch (ExpressionEvaluationException e)
+        catch (Exception e)
         {
-            throw new RuntimeException(e);
+            error(e);
         }
         return rvalue;
     }
@@ -188,5 +189,44 @@ public class ExecutionPointer implements IExprProps
         for (int t = cmd.getFirstToken(); t < cmd.getLastToken(); t++)
             sb.append(rt.getProgram().getTokens().get(t).getTokenText());
         return sb.toString();
+    }
+    
+    public void error(Exception e) throws RuntimeException
+    {
+        error(null, e);
+    }
+        
+    public void error(String msg) throws RuntimeException
+    {
+        error(msg, null);
+    }
+        
+    public void error(String msg, Exception e) throws RuntimeException
+    {
+        SyntaxBean cmd = command();
+        TokenBean firstToken = rt.getProgram().getTokens().get(cmd.getFirstToken());
+        TokenBean lastToken = rt.getProgram().getTokens().get(cmd.getLastToken());
+        LineBean line = firstToken.getLine();
+        System.err.println(rt.getProgram().getSource().getName()+": line="+line.getNumber());
+        System.err.println(line.getText());
+        for (int i = 0; i < firstToken.getCharStart(); i++)
+            System.err.print(" ");
+        for (int i = 0; i < lastToken.getCharEnd() - firstToken.getCharStart(); i++)
+            System.err.print("~");
+        System.err.println();
+        dumpVars(cmd.getArg1());
+        dumpVars(cmd.getArg2());
+        dumpVars(cmd.getArg3());
+        dumpVars(cmd.getArg4());
+        throw new RuntimeException(msg, e);
+    }
+    
+    private void dumpVars(Object v)
+    {
+        if (v instanceof VariableBean)
+        {
+            VariableBean var = (VariableBean)v;
+            System.err.println(var.getName()+"='"+get(var)+"'");
+        }
     }
 }

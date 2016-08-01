@@ -23,6 +23,8 @@ public class ExprOpSubtract extends ExprOperator
             arg1 = 0;
         if (arg2 == null)
             arg2 = 0;
+        arg1 = ExprOpAdd.sanitize(arg1);
+        arg2 = ExprOpAdd.sanitize(arg2);
         if (arg1 instanceof Boolean)
             arg1 = ((Boolean)arg1).booleanValue() ? 1 : 0;
         if (arg2 instanceof Boolean)

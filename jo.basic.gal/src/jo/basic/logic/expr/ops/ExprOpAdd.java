@@ -41,7 +41,7 @@ public class ExprOpAdd extends ExprOperator
         return 0;
     }
     
-    private Object sanitize(Object arg)
+    public static Object sanitize(Object arg)
     {
         if (arg instanceof String)
         {
@@ -50,9 +50,9 @@ public class ExprOpAdd extends ExprOperator
             if (a.length() == 0)
                 return arg;
             for (char c : a.toCharArray())
-                if (!Character.isDigit(c))
+                if (!Character.isDigit(c) && (c != '-') && (c != '.'))
                     return arg;
-            return IntegerUtils.parseInt(a);
+            return DoubleUtils.parseDouble(a);
         }
         return arg;
     }

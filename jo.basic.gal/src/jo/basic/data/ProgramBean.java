@@ -1,5 +1,6 @@
 package jo.basic.data;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -7,6 +8,7 @@ import java.util.Map;
 
 public class ProgramBean
 {
+    private File mSource;
     private List<LineBean>  mLines = new ArrayList<LineBean>();
     private List<TokenBean> mTokens = new ArrayList<>();
     private List<SyntaxBean> mSyntax = new ArrayList<>();
@@ -72,5 +74,15 @@ public class ProgramBean
     public void setFunctions(Map<String, FunctionBean> functions)
     {
         mFunctions = functions;
+    }
+
+    public File getSource()
+    {
+        return mSource;
+    }
+
+    public void setSource(File source)
+    {
+        mSource = source;
     }
 }

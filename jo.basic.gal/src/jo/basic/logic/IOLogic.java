@@ -22,6 +22,7 @@ public class IOLogic
         }
         program.getLines().clear();
         File modFile = makeFile(rt.getRoot(), module);
+        program.setSource(modFile);
         BufferedReader rdr = new BufferedReader(new FileReader(modFile));
         for (int number = 1;; number++)
         {
