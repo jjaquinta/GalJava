@@ -60,6 +60,7 @@ public class DoubleUtils
     {
         try
         {
+            str = str.trim();
         	int o = StringUtils.indexNotOf(str, "-+0123456789.");
         	if (o >= 0)
         		str = str.substring(0, o);

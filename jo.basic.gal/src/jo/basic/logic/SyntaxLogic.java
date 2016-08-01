@@ -76,7 +76,7 @@ public class SyntaxLogic
                     parseOpen(tp);
                     break;
                 case TokenBean.SWAP:
-                    parseExprList(tp, SyntaxBean.SWAP);
+                    parseSwap(tp);
                     break;
                 case TokenBean.PALETTE:
                     parseExprList(tp, SyntaxBean.PALETTE);
@@ -168,6 +168,16 @@ public class SyntaxLogic
             tp.inc();
             tp.addSyntax(SyntaxBean.ELSE);
         }
+    }
+
+    private static void parseSwap(TokenPointer tp) throws IOException
+    {
+        tp.mark();
+        tp.inc();
+        VariableBean var1 = tp.parseVariable();
+        tp.assertType(TokenBean.COMMA);
+        VariableBean var2 = tp.parseVariable();
+        tp.addSyntax(SyntaxBean.SWAP, var1, var2);
     }
 
     private static void parseExprList(TokenPointer tp, int syntaxType) throws IOException

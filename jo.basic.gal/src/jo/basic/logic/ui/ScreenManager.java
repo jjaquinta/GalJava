@@ -215,9 +215,9 @@ public class ScreenManager
     
     public void print(String txt)
     {
-        System.out.print("@"+mCursorX+","+mCursorY+" c"+mColor+" "+txt);
-        if (!txt.endsWith("\n"))
-            System.out.println(";");
+        //System.out.print("@"+mCursorX+","+mCursorY+" c"+mColor+" "+txt);
+        //if (!txt.endsWith("\n"))
+        //    System.out.println(";");
         Graphics g = mImage.getGraphics();
         for (char c : txt.toCharArray())
             print(g, c);

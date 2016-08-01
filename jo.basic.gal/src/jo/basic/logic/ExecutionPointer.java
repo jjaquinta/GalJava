@@ -180,4 +180,13 @@ public class ExecutionPointer implements IExprProps
     {
     	return IOLogic.makeFile(rt.getRoot(), fname);
     }
+
+    public String commandText()
+    {
+        StringBuffer sb = new StringBuffer();
+        SyntaxBean cmd = command();
+        for (int t = cmd.getFirstToken(); t < cmd.getLastToken(); t++)
+            sb.append(rt.getProgram().getTokens().get(t).getTokenText());
+        return sb.toString();
+    }
 }

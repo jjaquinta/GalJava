@@ -21,6 +21,7 @@ import jo.basic.logic.expr.func.ExprFunctionLen;
 import jo.basic.logic.expr.func.ExprFunctionMid;
 import jo.basic.logic.expr.func.ExprFunctionRTrim;
 import jo.basic.logic.expr.func.ExprFunctionRight;
+import jo.basic.logic.expr.func.ExprFunctionSpace;
 import jo.basic.logic.expr.func.ExprFunctionString;
 import jo.basic.logic.expr.func.ExprFunctionVal;
 import jo.basic.logic.expr.ops.ExprOpAdd;
@@ -61,6 +62,7 @@ public class ExprUtils
         addFunction(new ExprFunctionLTrim());
         addFunction(new ExprFunctionDefFn());
         addFunction(new ExprFunctionString());
+        addFunction(new ExprFunctionSpace());
     }
     
     public static void addFunction(ExprFunction func)

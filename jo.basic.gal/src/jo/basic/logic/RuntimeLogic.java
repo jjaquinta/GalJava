@@ -86,6 +86,9 @@ public class RuntimeLogic
                 case SyntaxBean.LET:
                     executeLet(ep);
                     break;
+                case SyntaxBean.SWAP:
+                    executeSwap(ep);
+                    break;
                 case SyntaxBean.FOR:
                     executeFor(ep);
                     break;
@@ -267,9 +270,15 @@ public class RuntimeLogic
                 e.printStackTrace();
             }
         }
-        else if (cmdline.startsWith("call less"))
+        else if (cmdline.startsWith("call less "))
         {
             String fname = cmdline.substring(9).trim();
+            File f = ep.makeFile(fname);
+            ep.rt.getScreen().view(f);
+        }
+        else if (cmdline.startsWith("less "))
+        {
+            String fname = cmdline.substring(4).trim();
             File f = ep.makeFile(fname);
             ep.rt.getScreen().view(f);
         }
@@ -550,7 +559,10 @@ public class RuntimeLogic
             {
                 skipToElse(ep);
                 if (ep.command().getType() == SyntaxBean.ELSE)
+                {
+                    ep.inc();
                     break;
+                }
                 else if (ep.command().getType() == SyntaxBean.END_IF)
                 {
                     ep.inc();
@@ -753,6 +765,17 @@ public class RuntimeLogic
         ExpressionBean rval = (ExpressionBean)ep.arg2();
         Object rvalue = ep.eval(rval);
         ep.put(var, rvalue);
+        ep.inc();
+    }
+    
+    private static void executeSwap(ExecutionPointer ep)
+    {
+        VariableBean var1 = (VariableBean)ep.arg1();
+        VariableBean var2 = (VariableBean)ep.arg2();
+        Object val1 = ep.get(var1);
+        Object val2 = ep.get(var2);
+        ep.put(var1, val2);
+        ep.put(var2, val1);
         ep.inc();
     }
     

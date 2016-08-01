@@ -72,7 +72,7 @@ public class IOLogic
     		        break;
     		    }
     		if (!foundIt)
-    		    throw new RuntimeException("Cannot find "+subName+" in "+f);
+    		    f = test; // does not exist
     	}
     	return f;
     }
