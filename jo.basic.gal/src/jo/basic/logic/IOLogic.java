@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.StringTokenizer;
 
 import jo.basic.data.BasicRuntime;
 import jo.basic.data.LineBean;
@@ -20,7 +21,7 @@ public class IOLogic
             rt.setProgram(program);
         }
         program.getLines().clear();
-        File modFile = new File(rt.getRoot(), module);
+        File modFile = makeFile(rt.getRoot(), module);
         BufferedReader rdr = new BufferedReader(new FileReader(modFile));
         for (int number = 1;; number++)
         {
@@ -47,5 +48,13 @@ public class IOLogic
         System.out.println(program.getLabels().size()+" labels");
         System.out.println(program.getData().size()+" data");
         System.out.println(program.getFunctions().size()+" functions");
+    }
+    
+    public static File makeFile(File root, String fname)
+    {
+    	File f = root;
+    	for (StringTokenizer st = new StringTokenizer(fname, "/\\"); st.hasMoreTokens(); )
+    		f = new File(f, st.nextToken());
+    	return f;
     }
 }

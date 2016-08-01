@@ -1,5 +1,7 @@
 package jo.basic.logic;
 
+import java.io.File;
+
 import jo.basic.data.BasicRuntime;
 import jo.basic.data.ExpressionBean;
 import jo.basic.data.LineBean;
@@ -172,5 +174,10 @@ public class ExecutionPointer implements IExprProps
             throw new RuntimeException(e);
         }
         return rvalue;
+    }
+    
+    public File makeFile(String fname)
+    {
+    	return IOLogic.makeFile(rt.getRoot(), fname);
     }
 }

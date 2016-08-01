@@ -251,7 +251,7 @@ public class RuntimeLogic
         String cmd = cmdline.substring(0, o);
         if (cmd.toUpperCase().indexOf("EGACOLOR") >= 0)
             return; // only used to remap colors
-        if (isBasicFile(ep.rt.getRoot(), cmd))
+        if (isBasicFile(ep, cmd))
         {
             BasicRuntime subRT = new BasicRuntime();
             subRT.setRoot(ep.rt.getRoot());
@@ -270,7 +270,7 @@ public class RuntimeLogic
         else if (cmdline.startsWith("call less"))
         {
             String fname = cmdline.substring(9).trim();
-            File f = new File(ep.rt.getRoot(), fname);
+            File f = ep.makeFile(fname);
             ep.rt.getScreen().view(f);
         }
         else
@@ -293,9 +293,9 @@ public class RuntimeLogic
         ep.inc();
     }
     
-    private static boolean isBasicFile(File root, String cmd)
+    private static boolean isBasicFile(ExecutionPointer ep, String cmd)
     {
-        File f = new File(root, cmd+".BAS");
+        File f = ep.makeFile(cmd+".BAS");
         return f.exists();
     }
     
@@ -416,7 +416,7 @@ public class RuntimeLogic
             ExpressionBean file = (ExpressionBean)ep.arg3();
             String fname = ep.evalString(file);
             closeStream(ep, idx);
-            File f = new File(ep.rt.getRoot(), fname);
+            File f = ep.makeFile(fname);
             ep.rt.getStreamFiles()[idx] = f;
             if ("i".equalsIgnoreCase(mode))
             {
