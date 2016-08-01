@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="WINDOWS-1252" standalone="no"?>
+<jardesc>
+    <jar path="D:/utilities/gal24/bas.jar"/>
+    <options buildIfNeeded="true" compress="true" descriptionLocation="/jo.basic.gal/bas.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="true" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
+    <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
+    <selectedProjects/>
+    <manifest generateManifest="true" mainClassHandleIdentifier="=jo.basic.gal/src&lt;jo.basic.cmd{Run.java[Run" manifestLocation="" manifestVersion="1.0" reuseManifest="false" saveManifest="false" usesManifest="true">
+        <sealing sealJar="false">
+            <packagesToSeal/>
+            <packagesToUnSeal/>
+        </sealing>
+    </manifest>
+    <selectedElements exportClassFiles="true" exportJavaFiles="true" exportOutputFolder="false">
+        <file path="/jo.basic.gal/.classpath"/>
+        <file path="/jo.basic.gal/.project"/>
+        <javaElement handleIdentifier="=jo.basic.gal/src"/>
+    </selectedElements>
+</jardesc>
