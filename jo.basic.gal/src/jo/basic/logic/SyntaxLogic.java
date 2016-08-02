@@ -486,10 +486,10 @@ public class SyntaxLogic
         arg1.add(tp.parseExpression());
         tp.assertType(TokenBean.RPAREN);
         tp.assertType(TokenBean.COMMA);
-        arg1.add(tp.parseExpression());
+        VariableBean arg2 = tp.parseVariable();
         tp.assertType(TokenBean.COMMA);
         tp.assertType(TokenBean.PSET);
-        tp.addSyntax(SyntaxBean.PUT_IMAGE, arg1);
+        tp.addSyntax(SyntaxBean.PUT_IMAGE, arg1, arg2);
     }
 
     private static void parseDef(TokenPointer tp) throws IOException
@@ -514,7 +514,10 @@ public class SyntaxLogic
             func.getArgs().add(tp.parseVariable());
         }
         if (tp.type() == TokenBean.EQUAL)
+        {
+            tp.inc();
             func.setCode(tp.parseExpression());
+        }
         tp.assertType(TokenBean.END_OF_COMMAND);
         tp.addSyntax(SyntaxBean.DEF, func);
         tp.program.getFunctions().put(func.getName().toUpperCase(), func);

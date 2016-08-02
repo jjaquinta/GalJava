@@ -149,6 +149,9 @@ public class RuntimeLogic
                 case SyntaxBean.COLOR:
                     executeColor(ep);
                     break;
+                case SyntaxBean.PALETTE:
+                    executePalette(ep);
+                    break;
                 case SyntaxBean.LOCATE:
                     executeLocate(ep);
                     break;
@@ -169,6 +172,9 @@ public class RuntimeLogic
                     break;
                 case SyntaxBean.GET_IMAGE:
                     executeGetImage(ep);
+                    break;
+                case SyntaxBean.PUT_IMAGE:
+                    executePutImage(ep);
                     break;
                 case SyntaxBean.SHELL:
                     executeShell(ep);
@@ -343,6 +349,21 @@ public class RuntimeLogic
         ep.inc();
     }
     
+    private static void executePalette(ExecutionPointer ep)
+    {
+        @SuppressWarnings("unchecked")
+        List<ExpressionBean> exprs = (List<ExpressionBean>)ep.command().getArg1();
+        if (exprs.size() >= 2)
+        {
+            int colorNum = ep.evalInt(exprs.get(0));
+            int colorVal = ep.evalInt(exprs.get(1));
+            ep.rt.getScreen().palette(colorNum, colorVal);
+        }
+        else
+            ep.rt.getScreen().paletteReset();
+        ep.inc();
+    }
+    
     private static void executeLocate(ExecutionPointer ep)
     {
         @SuppressWarnings("unchecked")
@@ -467,8 +488,20 @@ public class RuntimeLogic
         int y1 = ep.evalInt(ords.get(1));
         int x2 = ep.evalInt(ords.get(2));
         int y2 = ep.evalInt(ords.get(3));
-        int[] data = ep.rt.getScreen().get(x1, x2, y1, y2);
+        int[] data = ep.rt.getScreen().get(x1, y1, x2, y2);
         ep.put(var, data);
+        ep.inc();
+    }
+    
+    private static void executePutImage(ExecutionPointer ep)
+    {
+        @SuppressWarnings("unchecked")
+        List<ExpressionBean> ords = (List<ExpressionBean>)ep.arg1();
+        VariableBean var = (VariableBean)ep.arg2();
+        int x = ep.evalInt(ords.get(0));
+        int y = ep.evalInt(ords.get(1));
+        int[] data = (int[])ep.get(var);
+        ep.rt.getScreen().put(x, y, data);
         ep.inc();
     }
 
@@ -823,6 +856,7 @@ public class RuntimeLogic
                     ep.error("Unknown case");
                 if (runThis)
                 {
+                    ep.inc();
                     executeSteps(ep, UNTIL_END_SELECT);                    
                     break;
                 }

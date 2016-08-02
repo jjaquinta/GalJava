@@ -11,9 +11,7 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,6 +22,24 @@ import javax.swing.JPanel;
 
 public class ScreenManager
 {
+    private static final Color[] BASE_COLORS = {
+            new Color(0x00, 0x00, 0x50),
+            new Color(0x00, 0x00, 0xA8),
+            new Color(0x00, 0xA8, 0x00),
+            new Color(0x00, 0xA8, 0xA8),
+            new Color(0xA8, 0x00, 0x00),
+            new Color(0xA8, 0x00, 0xA8),
+            new Color(0xA8, 0x54, 0x00),
+            new Color(0xA8, 0xA8, 0xA8),
+            new Color(0x54, 0x54, 0x54),
+            new Color(0x54, 0x54, 0xFC),
+            new Color(0x54, 0xFC, 0x54),
+            new Color(0x54, 0xFC, 0xFC),
+            new Color(0xFC, 0x54, 0x54),
+            new Color(0xFC, 0x54, 0xFC),
+            new Color(0xFC, 0xFC, 0x54),
+            new Color(0xFC, 0xFC, 0xFC),
+    };
     private static final Color[] COLORS = {
             new Color(0x00, 0x00, 0x50),
             new Color(0x00, 0x00, 0xA8),
@@ -189,6 +205,7 @@ public class ScreenManager
             throw new RuntimeException("Unsupported screen type "+num);
         mCellX = mImage.getWidth()/mCols;
         mCellY = mImage.getHeight()/mRows;
+        paletteReset();
         Graphics g = mImage.getGraphics();
         Font m = new Font(Font.MONOSPACED, Font.BOLD, 12);
         g.setFont(m);
@@ -211,6 +228,20 @@ public class ScreenManager
     public void color(int num)
     {
         mColor = num;
+    }
+    
+    public void paletteReset()
+    {
+        for (int i = 0; i < BASE_COLORS.length; i++)
+            COLORS[i] = BASE_COLORS[i];
+    }
+    
+    public void palette(int num, int rgb)
+    {
+        int r = num%256;
+        int g = (num/256)%256;
+        int b = (num/256/256)%256;
+        COLORS[num] = new Color(r, g, b);
     }
     
     public void locate(int x, int y)
@@ -262,14 +293,26 @@ public class ScreenManager
         //saveScreen();
     }
     
-    public int[] get(int x1, int x2, int y1, int y2)
+    public int[] get(int x1, int y1, int x2, int y2)
     {
-        int[] ret = new int[(x2 - x1 + 1)*(y2 - y1 + 1)];
+        int[] ret = new int[(x2 - x1 + 1)*(y2 - y1 + 1) + 2];
         int o = 0;
+        ret[o++] = (x2 - x1);
+        ret[o++] = (y2 - y1);
         for (int y = y1; y <= y2; y++)
             for (int x = x1; x <= x2; x++)
                 ret[o++] = mImage.getRGB(x-1, y-1);
         return ret;
+    }
+    
+    public void put(int x1, int y1, int[] ret)
+    {
+        int o = 0;
+        int x2 = x1 + ret[o++];
+        int y2 = y1 + ret[o++];
+        for (int y = y1; y <= y2; y++)
+            for (int x = x1; x <= x2; x++)
+                mImage.setRGB(x-1, y-1, ret[o++]);
     }
     
     public void pset(int x, int y)
@@ -317,6 +360,7 @@ public class ScreenManager
     
     public void paint(int x, int y, int color)
     {
+        /*
         Graphics g = mImage.getGraphics();
         g.setColor(COLORS[mColor]);
         g.fillRect(x-1, y-1, 1, 1);
@@ -346,6 +390,7 @@ public class ScreenManager
         mCanvas.repaint();
         mLastX = x;
         mLastY = y;
+        */
     }
     
     private void addFlood(List<Integer> todo, Set<Integer> done, int x, int y)
