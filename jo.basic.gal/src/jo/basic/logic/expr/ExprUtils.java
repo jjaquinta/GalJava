@@ -23,6 +23,7 @@ import jo.basic.logic.expr.func.ExprFunctionRTrim;
 import jo.basic.logic.expr.func.ExprFunctionRight;
 import jo.basic.logic.expr.func.ExprFunctionSpace;
 import jo.basic.logic.expr.func.ExprFunctionString;
+import jo.basic.logic.expr.func.ExprFunctionUCase;
 import jo.basic.logic.expr.func.ExprFunctionVal;
 import jo.basic.logic.expr.ops.ExprOpAdd;
 import jo.basic.logic.expr.ops.ExprOpAnd;
@@ -33,11 +34,13 @@ import jo.basic.logic.expr.ops.ExprOpGreaterThan;
 import jo.basic.logic.expr.ops.ExprOpGreaterThanOrEqual;
 import jo.basic.logic.expr.ops.ExprOpLessThan;
 import jo.basic.logic.expr.ops.ExprOpLessThanOrEqual;
+import jo.basic.logic.expr.ops.ExprOpMod;
 import jo.basic.logic.expr.ops.ExprOpMultiply;
 import jo.basic.logic.expr.ops.ExprOpNotEquals;
 import jo.basic.logic.expr.ops.ExprOpOr;
 import jo.basic.logic.expr.ops.ExprOpSubtract;
 import jo.util.utils.obj.BooleanUtils;
+import jo.util.utils.obj.DoubleUtils;
 
 
 public class ExprUtils
@@ -63,6 +66,7 @@ public class ExprUtils
         addFunction(new ExprFunctionDefFn());
         addFunction(new ExprFunctionString());
         addFunction(new ExprFunctionSpace());
+        addFunction(new ExprFunctionUCase());
     }
     
     public static void addFunction(ExprFunction func)
@@ -88,6 +92,7 @@ public class ExprUtils
         addOperator(new ExprOpOr());
         addOperator(new ExprOpNotEquals());
         addOperator(new ExprOpExponent());
+        addOperator(new ExprOpMod());
     }
     
     public static void addOperator(ExprOperator op)
@@ -159,7 +164,7 @@ public class ExprUtils
                 if (node.getToken().getType() == TokenBean.STRING)
                     ret = node.getToken().getTokenText();
                 else if (node.getToken().getType() == TokenBean.NUMBER)
-                    ret = Double.parseDouble(node.getToken().getTokenText());
+                    ret = DoubleUtils.parseDouble(node.getToken().getTokenText());
                 else if (node.getToken().getType() == TokenBean.HEXNUMBER)
                     ret = Integer.parseInt(node.getToken().getTokenText(), 16);
                 else if (node.getToken().getType() == TokenBean.VARIABLE)
@@ -245,6 +250,26 @@ public class ExprUtils
                 tok.remove(i+1);
                 tok.remove(i+1);
                 tok.add(i+1, ne);
+            }
+            else if ((i == 0) && (tok.get(i).getType() == TokenBean.SUBTRACT) && (tok.get(i+1).getType() == TokenBean.NUMBER))
+            {
+                TokenBean ne = new TokenBean();
+                ne.setType(TokenBean.NUMBER);
+                ne.setLine(tok.get(i).getLine());
+                ne.setCharStart(tok.get(i).getCharStart());
+                ne.setCharEnd(tok.get(i+1).getCharEnd());
+                tok.remove(i);
+                tok.remove(i);
+                tok.add(i, ne);
+            }
+            else if ((i == 0) && (tok.get(i).getType() == TokenBean.SUBTRACT) && (tok.get(i+1).getType() == TokenBean.VARIABLE))
+            {
+                TokenBean zero = new TokenBean();
+                zero.setType(TokenBean.NUMBER);
+                zero.setLine(tok.get(i).getLine());
+                zero.setCharStart(tok.get(i).getCharStart());
+                zero.setCharEnd(tok.get(i).getCharStart());
+                tok.add(i, zero);
             }
 //        System.out.println("After:");
 //        for (TokenBean t : tok)

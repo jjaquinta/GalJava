@@ -963,6 +963,7 @@ class TokenPointer
             case TokenBean.EXPONENT:
             case TokenBean.OR:
             case TokenBean.AND:
+            case TokenBean.MOD:
             case TokenBean.NOT_EQUAL:
             case TokenBean.GREATERTHAN_EQUAL:
             case TokenBean.LESSTHAN_EQUAL:

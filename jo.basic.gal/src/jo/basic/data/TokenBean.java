@@ -82,6 +82,7 @@ public class TokenBean
     public static final int LOCATE = 2014;
     public static final int OR = 2015;
     public static final int AND = 2016;
+    public static final int MOD = 2017;
     // synthesized operators
     public static final int NOT_EQUAL = 3001;
     public static final int GREATERTHAN_EQUAL = 3002;
@@ -140,6 +141,7 @@ public class TokenBean
         KEYWORDS.put("PUT", TokenBean.PUT);
         KEYWORDS.put("OR", TokenBean.OR);
         KEYWORDS.put("AND", TokenBean.AND);
+        KEYWORDS.put("MOD", TokenBean.MOD);
         KEYWORDS.put("<>", TokenBean.NOT_EQUAL);
         KEYWORDS.put(">=", TokenBean.GREATERTHAN_EQUAL);
         KEYWORDS.put("<=", TokenBean.LESSTHAN_EQUAL);

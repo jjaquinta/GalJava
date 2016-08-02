@@ -158,6 +158,15 @@ public class RuntimeLogic
                 case SyntaxBean.PSET:
                     executePSet(ep);
                     break;
+                case SyntaxBean.DRAW_LINE:
+                    executeDrawLine(ep);
+                    break;
+                case SyntaxBean.CIRCLE:
+                    executeCircle(ep);
+                    break;
+                case SyntaxBean.PAINT:
+                    executePaint(ep);
+                    break;
                 case SyntaxBean.GET_IMAGE:
                     executeGetImage(ep);
                     break;
@@ -404,6 +413,48 @@ public class RuntimeLogic
         int x = ep.evalInt((ExpressionBean)ep.arg1());
         int y = ep.evalInt((ExpressionBean)ep.arg2());
         ep.rt.getScreen().pset(x, y);
+        ep.inc();
+    }
+    
+    private static void executeDrawLine(ExecutionPointer ep)
+    {
+        if (ep.arg1() instanceof List<?>)
+        {
+            @SuppressWarnings("unchecked")
+            List<ExpressionBean> exprs = (List<ExpressionBean>)ep.arg1();
+            int x1 = ep.evalInt(exprs.get(0));
+            int y1 = ep.evalInt(exprs.get(1));
+            int x2 = ep.evalInt(exprs.get(2));
+            int y2 = ep.evalInt(exprs.get(3));
+            ep.rt.getScreen().line(x1, y1, x2, y2);
+        }
+        else
+        {
+            int x = ep.evalInt((ExpressionBean)ep.arg1());
+            int y = ep.evalInt((ExpressionBean)ep.arg2());
+            ep.rt.getScreen().lineTo(x, y);
+        }
+        ep.inc();
+    }
+    
+    private static void executeCircle(ExecutionPointer ep)
+    {
+        int x = ep.evalInt((ExpressionBean)ep.arg1());
+        int y = ep.evalInt((ExpressionBean)ep.arg2());
+        int r = ep.evalInt((ExpressionBean)ep.arg3());
+        Integer color = null;
+        if (ep.arg4() != null)
+            color = ep.evalInt((ExpressionBean)ep.arg4());
+        ep.rt.getScreen().circle(x, y, r, color);
+        ep.inc();
+    }
+    
+    private static void executePaint(ExecutionPointer ep)
+    {
+        int x = ep.evalInt((ExpressionBean)ep.arg1());
+        int y = ep.evalInt((ExpressionBean)ep.arg2());
+        int color = ep.evalInt((ExpressionBean)ep.arg3());
+        ep.rt.getScreen().paint(x, y, color);
         ep.inc();
     }
     

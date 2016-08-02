@@ -11,8 +11,12 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
@@ -48,6 +52,8 @@ public class ScreenManager
     private int             mCellX;
     private int             mCellY;
     private FontMetrics     mMetrics;
+    private int             mLastX;
+    private int             mLastY;
     
     private StringBuffer    mKeyBuffer = new StringBuffer();
     
@@ -274,6 +280,83 @@ public class ScreenManager
         g.dispose();
         //saveScreen();
         mCanvas.repaint();
+        mLastX = x;
+        mLastY = y;
+    }
+    
+    public void line(int x1, int y1, int x2, int y2)
+    {
+        Graphics g = mImage.getGraphics();
+        g.setColor(COLORS[mColor]);
+        g.drawLine(x2-1, y2-1, x2-1, y2-1);
+        g.dispose();
+        //saveScreen();
+        mCanvas.repaint();
+        mLastX = x2;
+        mLastY = y2;
+    }
+    
+    public void lineTo(int x, int y)
+    {
+        line(mLastX, mLastY, mLastX + x, mLastY + y);
+    }
+    
+    public void circle(int x, int y, int r, Integer color)
+    {
+        if (color == null)
+            color = mColor;
+        Graphics g = mImage.getGraphics();
+        g.setColor(COLORS[color]);
+        g.drawOval(x, y, r, r);
+        g.dispose();
+        //saveScreen();
+        mCanvas.repaint();
+        mLastX = x;
+        mLastY = y;
+    }
+    
+    public void paint(int x, int y, int color)
+    {
+        Graphics g = mImage.getGraphics();
+        g.setColor(COLORS[mColor]);
+        g.fillRect(x-1, y-1, 1, 1);
+        g.dispose();
+        int c = mImage.getRGB(x-1, y-1);
+        List<Integer> todo = new ArrayList<>();
+        Set<Integer> done = new HashSet<>();
+        addFlood(todo, done, x-2,y-1);
+        addFlood(todo, done, x-0,y-1);
+        addFlood(todo, done, x-1,y-2);
+        addFlood(todo, done, x-1,y-0);
+        while (todo.size() > 0)
+        {
+            int xy = todo.get(0);
+            todo.remove(0);
+            x = xy/8192;
+            y = xy%8192;
+            if (mImage.getRGB(x, y) == c)
+                continue;
+            mImage.setRGB(x, y, c);
+            addFlood(todo, done, x-1,y);
+            addFlood(todo, done, x+1,y);
+            addFlood(todo, done, x,y-1);
+            addFlood(todo, done, x,y+1);
+        }
+        //saveScreen();
+        mCanvas.repaint();
+        mLastX = x;
+        mLastY = y;
+    }
+    
+    private void addFlood(List<Integer> todo, Set<Integer> done, int x, int y)
+    {
+        if ((x < 0) || (x >= mImage.getWidth()))
+            return;
+        if ((y < 0) || (y >= mImage.getHeight()))
+            return;
+        int xy = x*8192 + y;
+        if (!done.contains(xy))
+            todo.add(xy);
     }
     
     public void edit(File f)

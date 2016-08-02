@@ -172,6 +172,7 @@ public class ExecutionPointer implements IExprProps
         }
         catch (Exception e)
         {
+            System.err.println("Expr: "+expr.tokens(rt.getProgram()));
             error(e);
         }
         return rvalue;
