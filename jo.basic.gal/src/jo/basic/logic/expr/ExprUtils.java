@@ -188,7 +188,7 @@ public class ExprUtils
         return ret;
     }
     
-    private static void preProcess(List<TokenBean> tok)
+    public static void preProcess(List<TokenBean> tok)
     {
 //        System.out.println("Before:");
 //        for (TokenBean t : tok)

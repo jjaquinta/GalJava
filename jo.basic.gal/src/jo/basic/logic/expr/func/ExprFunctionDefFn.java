@@ -4,6 +4,7 @@ import jo.basic.data.BasicRuntime;
 import jo.basic.data.FunctionBean;
 import jo.basic.data.VariableBean;
 import jo.basic.logic.ExecutionPointer;
+import jo.basic.logic.FunctionExitException;
 import jo.basic.logic.RuntimeLogic;
 import jo.basic.logic.expr.ExprFunction;
 
@@ -46,7 +47,14 @@ public class ExprFunctionDefFn extends ExprFunction
             int oldExecutionPoint = rt.getExecutionPoint();
             int newExecutionPoint = rt.getProgram().getLabels().get(name.toUpperCase());
             rt.setExecutionPoint(newExecutionPoint);
-            RuntimeLogic.executeSteps(ep, RuntimeLogic.UNTIL_END_DEF);
+            try
+            {
+                RuntimeLogic.executeSteps(ep, RuntimeLogic.UNTIL_END_DEF);
+            }
+            catch (FunctionExitException e)
+            {
+                ; // NOOP
+            }
             Object val = ep.get(func.getName());
             rt.setExecutionPoint(oldExecutionPoint);
             rt.getVariables().remove(func.getName().toUpperCase());

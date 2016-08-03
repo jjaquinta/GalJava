@@ -2,31 +2,34 @@ package jo.basic.logic.ui;
 
 import java.awt.CardLayout;
 import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
-import javax.swing.JPanel;
 
-public class ScreenManager implements IScreenManager
+import jo.basic.logic.ui.elem.DrawBox;
+import jo.basic.logic.ui.elem.DrawCircle;
+import jo.basic.logic.ui.elem.DrawElem;
+import jo.basic.logic.ui.elem.DrawFill;
+import jo.basic.logic.ui.elem.DrawFinePrint;
+import jo.basic.logic.ui.elem.DrawLine;
+import jo.basic.logic.ui.elem.DrawPoint;
+import jo.basic.logic.ui.elem.DrawString;
+
+public class ScaledScreenManager implements IScreenManager
 {
-    private static final Color[] BASE_COLORS = {
+    public static final Color[] BASE_COLORS = {
             new Color(0x00, 0x00, 0x50),
             new Color(0x00, 0x00, 0xA8),
             new Color(0x00, 0xA8, 0x00),
@@ -63,52 +66,28 @@ public class ScreenManager implements IScreenManager
             new Color(0xFC, 0xFC, 0xFC),
     };
     
-    private BufferedImage   mImage;
     private int             mColor;
     private int             mRows;
     private int             mCols;
     private int             mCursorX; // 0 based
     private int             mCursorY; // 0 based
-    private int             mCellX;
-    private int             mCellY;
-    private Font            mFont;
-    private FontMetrics     mMetrics;
     private int             mLastX;
     private int             mLastY;
     
     private StringBuffer    mKeyBuffer = new StringBuffer();
+    private StringBuffer    mLetters = new StringBuffer();
     
     private JFrame          mFrame;
-    private JPanel          mCanvas;
+    private TTYPanel        mCanvas;
     private EditPanel       mEditor;
     private EditPanel       mViewer;
     private String          mShowing;
     private Thread          mWaiting = null;
     
-    public ScreenManager()
+    public ScaledScreenManager(File root)
     {
         mFrame = new JFrame("Galactic 2.4");
-        mCanvas = new JPanel() { 
-            private static final long serialVersionUID = 5821442014097723796L;
-            @Override
-            public void paintComponent(Graphics g)
-            {
-                doPaint(g);
-            }
-            @Override
-            public Dimension getMinimumSize()
-            {
-                if (mImage == null)
-                    return new Dimension(640, 480);
-                else
-                    return new Dimension(mImage.getWidth(), mImage.getHeight());
-            }
-            @Override
-            public Dimension getPreferredSize()
-            {
-                return getMinimumSize();
-            }
-        };
+        mCanvas = new TTYPanel();
         mEditor = new EditPanel(this, false);
         mViewer = new EditPanel(this, true);
         mCanvas.addKeyListener(new KeyAdapter() {
@@ -139,6 +118,36 @@ public class ScreenManager implements IScreenManager
         mFrame.setVisible(true);
         mFrame.pack();
         mCanvas.requestFocus();
+        readLetters(root);
+    }
+    
+    private void readLetters(File root)
+    {
+        try
+        {
+            BufferedReader rdr = new BufferedReader(new FileReader(new File(new File(root, "DATA"), "LETTERS.DAT")));
+            for (;;)
+            {
+                String inbuf = rdr.readLine();
+                if (inbuf == null)
+                    break;
+                if ("<space>".equals(inbuf))
+                    mLetters.append(" ");
+                else
+                    mLetters.append(inbuf);
+                rdr.readLine();
+                rdr.readLine();
+                rdr.readLine();
+                rdr.readLine();
+                rdr.readLine();
+            }
+            rdr.close();
+        }
+        catch (IOException e)
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 
     public void show(String card)
@@ -193,48 +202,31 @@ public class ScreenManager implements IScreenManager
         }
     }
     
-    private void doPaint(Graphics g)
-    {
-        if (mImage != null)
-            g.drawImage(mImage, 0, 0, mCanvas.getWidth(), mCanvas.getHeight(), 0, 0, mImage.getWidth(), mImage.getHeight(), null);
-    }
-    
     public void screen(int num)
     {
         if (num == 12)
         {
-            mImage = new BufferedImage(640, 480, BufferedImage.TYPE_INT_RGB);
             mRows = 30;
             mCols = 80;
         }
         else if (num == 0)
         {
-            mImage = new BufferedImage(640, 480, BufferedImage.TYPE_INT_RGB);
             mRows = 25;
             mCols = 80;
         }
         else
             throw new RuntimeException("Unsupported screen type "+num);
-        mCellX = mImage.getWidth()/mCols;
-        mCellY = mImage.getHeight()/mRows;
         paletteReset();
-        Graphics g = mImage.getGraphics();
-        mFont = new Font(Font.MONOSPACED, Font.PLAIN, 11);
-        g.setFont(mFont);
-        mMetrics = g.getFontMetrics();
-        g.dispose();
+        mCanvas.setCharsWide(mCols);
+        mCanvas.setCharsHigh(mRows);
         mCanvas.invalidate();
     }
     
     public void cls()
     {
-        Graphics g = mImage.getGraphics();
-        g.setColor(ScaledScreenManager.BASE_COLORS[0]);
-        g.fillRect(0, 0, mImage.getWidth(), mImage.getHeight());
-        g.dispose();
         mCursorX = 0;
         mCursorY = 0;
-        mCanvas.repaint();
+        mCanvas.clearElements();
     }
     
     public void color(int num)
@@ -267,15 +259,12 @@ public class ScreenManager implements IScreenManager
         //System.out.print("@"+mCursorX+","+mCursorY+" c"+mColor+" "+txt);
         //if (!txt.endsWith("\n"))
         //    System.out.println(";");
-        Graphics g = mImage.getGraphics();
-        g.setFont(mFont);
         for (char c : txt.toCharArray())
-            print(g, c);
-        g.dispose();
+            print(c);
         mCanvas.repaint();
     }
     
-    private void print(Graphics g, char c)
+    private void print(char c)
     {
         if (c == '\r')
         {
@@ -289,15 +278,14 @@ public class ScreenManager implements IScreenManager
                 mCursorY = 0;
             return;
         }
-        c = CP437[c];
-        //System.out.println("PRINT '"+c+"' at "+mCursorX+","+mCursorY+" in color "+mColor);
-        g.setColor(ScaledScreenManager.BASE_COLORS[0]);
-        int x = mCursorX*mCellX;
-        int y = mCursorY*mCellY;
-        g.fillRect(x, y, mCellX, mCellY);
-        g.setColor(COLORS[mColor]);
-        int yy = y + mMetrics.getAscent() - (mCellY - mMetrics.getAscent() + mMetrics.getDescent())/2;
-        g.drawString(String.valueOf(c), x, yy);
+        if ((c >= 179) && (c <= 218))
+            mCanvas.addElement(new DrawBox(mCursorX, mCursorY, COLORS[mColor], c));
+        else
+        {                
+            c = CP437[c];
+            //System.out.println("PRINT '"+c+"' at "+mCursorX+","+mCursorY+" in color "+mColor);
+            mCanvas.addElement(new DrawString(mCursorX, mCursorY, COLORS[mColor], String.valueOf(c)));
+        }
         mCursorX++;
         if (mCursorX == mCols)
         {
@@ -311,35 +299,22 @@ public class ScreenManager implements IScreenManager
     
     public int[] get(int x1, int y1, int x2, int y2)
     {
-        int[] ret = new int[(x2 - x1 + 1)*(y2 - y1 + 1) + 2];
-        int o = 0;
-        ret[o++] = (x2 - x1);
-        ret[o++] = (y2 - y1);
-        for (int y = y1; y <= y2; y++)
-            for (int x = x1; x <= x2; x++)
-                ret[o++] = mImage.getRGB(x-1, y-1);
+        int[] ret = new int[1];
+        ret[0] = mLetters.charAt(0);
+        mLetters.delete(0, 1);
         return ret;
     }
     
     public void put(int x1, int y1, int[] ret)
     {
-        int o = 0;
-        int x2 = x1 + ret[o++];
-        int y2 = y1 + ret[o++];
-        for (int y = y1; y <= y2; y++)
-            for (int x = x1; x <= x2; x++)
-                mImage.setRGB(x-1, y-1, ret[o++]);
+        mCanvas.addElement(new DrawFinePrint(x1, y1, String.valueOf((char)ret[0])));
     }
     
     public void pset(int x, int y)
     {
         //System.out.println("pset "+x+","+y+", c="+mColor);
-        Graphics g = mImage.getGraphics();
-        g.setColor(COLORS[mColor]);
-        g.fillRect(x-1, y-1, 1, 1);
-        g.dispose();
+        mCanvas.addElement(new DrawPoint(x, y, COLORS[mColor]));
         //saveScreen();
-        mCanvas.repaint();
         mLastX = x;
         mLastY = y;
     }
@@ -347,12 +322,8 @@ public class ScreenManager implements IScreenManager
     public void line(int x1, int y1, int x2, int y2)
     {
         //System.out.println("line "+x1+","+y1+" - "+x2+","+y2+", c="+mColor);
-        Graphics g = mImage.getGraphics();
-        g.setColor(COLORS[mColor]);
-        g.drawLine(x1-1, y1-1, x2-1, y2-1);
-        g.dispose();
+        mCanvas.addElement(new DrawLine(x1, y1, x2, y2, COLORS[mColor]));
         //saveScreen();
-        mCanvas.repaint();
         mLastX = x2;
         mLastY = y2;
     }
@@ -367,12 +338,8 @@ public class ScreenManager implements IScreenManager
         if (color != null)
             mColor = color;
         //System.out.println("circle "+x+","+y+" x"+r+", c="+color);
-        Graphics g = mImage.getGraphics();
-        g.setColor(COLORS[mColor]);
-        g.drawOval(x - r, y - r, r*2, r*2);
-        g.dispose();
+        mCanvas.addElement(new DrawCircle(x, y, r, COLORS[mColor]));
         //saveScreen();
-        mCanvas.repaint();
         mLastX = x;
         mLastY = y;
     }
@@ -380,42 +347,10 @@ public class ScreenManager implements IScreenManager
     public void paint(int x, int y, int color)
     {
         //System.out.println("paint "+x+","+y+", c="+mColor);
-        Color c = COLORS[mColor];
-        int rgb = (c.getRed()<<16)|(c.getGreen()<<8)|(c.getBlue());
-        List<Integer> todo = new ArrayList<>();
-        Set<Integer> done = new HashSet<>();
-        addFlood(todo, done, x-1,y-1);
-        while (todo.size() > 0)
-        {
-            int xy = todo.get(0);
-            todo.remove(0);
-            x = xy/8192;
-            y = xy%8192;
-            int p = mImage.getRGB(x, y);
-            p &= 0xFFFFFF;
-            if (p == rgb)
-                continue;
-            mImage.setRGB(x, y, rgb|0xFF000000);
-            addFlood(todo, done, x-1,y);
-            addFlood(todo, done, x+1,y);
-            addFlood(todo, done, x,y-1);
-            addFlood(todo, done, x,y+1);
-        }
+        mCanvas.addElement(new DrawFill(x, y, COLORS[mColor]));
         //saveScreen();
-        mCanvas.repaint();
         mLastX = x;
         mLastY = y;
-    }
-    
-    private void addFlood(List<Integer> todo, Set<Integer> done, int x, int y)
-    {
-        if ((x < 0) || (x >= mImage.getWidth()))
-            return;
-        if ((y < 0) || (y >= mImage.getHeight()))
-            return;
-        int xy = x*8192 + y;
-        if (!done.contains(xy))
-            todo.add(xy);
     }
     
     public void edit(File f)
@@ -459,7 +394,12 @@ public class ScreenManager implements IScreenManager
         mLastSnap = now;
         try
         {
-            ImageIO.write(mImage, "PNG", new File("c:\\temp\\bas.png"));
+            BufferedImage image = new BufferedImage(640, 480, BufferedImage.TYPE_INT_RGB);
+            Graphics2D g = (Graphics2D)image.createGraphics();
+            for (DrawElem e : mCanvas.getElements().toArray(new DrawElem[0]))
+                e.draw(g);
+            g.dispose();
+            ImageIO.write(image, "PNG", new File("c:\\temp\\bas.png"));
         }
         catch (IOException e)
         {
@@ -469,7 +409,6 @@ public class ScreenManager implements IScreenManager
 
     public String inkey()
     {
-        saveScreen();
         synchronized (mKeyBuffer)
         {
             if (mKeyBuffer.length() > 0)

@@ -21,7 +21,7 @@ import javax.swing.JTextArea;
 public class EditPanel extends JPanel
 {
     private static final long serialVersionUID = -6414517257739918151L;
-    private ScreenManager   mParent;
+    private IScreenManager   mParent;
     private boolean     mReadOnly;
     private File        mFile;
     private JTextArea   mClient;
@@ -29,7 +29,7 @@ public class EditPanel extends JPanel
     private JButton     mSave;
     private JButton     mCancel;
     
-    public EditPanel(ScreenManager parent, boolean readOnly)
+    public EditPanel(IScreenManager parent, boolean readOnly)
     {
         mParent = parent;
         mReadOnly = readOnly;
@@ -69,10 +69,10 @@ public class EditPanel extends JPanel
             }
         });
         setForeground(Color.WHITE);
-        setBackground(Color.BLACK);
+        setBackground(ScaledScreenManager.BASE_COLORS[0]);
         setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         mClient.setForeground(Color.WHITE);
-        mClient.setBackground(Color.BLACK);
+        mClient.setBackground(ScaledScreenManager.BASE_COLORS[0]);
         mClient.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
     }
     

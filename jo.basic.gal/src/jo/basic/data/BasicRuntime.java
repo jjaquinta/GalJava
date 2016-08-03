@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import jo.basic.logic.ui.ScreenManager;
+import jo.basic.logic.ui.IScreenManager;
 
 public class BasicRuntime
 {
@@ -19,7 +19,7 @@ public class BasicRuntime
     private Random      mRND = new Random();
     private Object[]    mStreams = new Object[8];
     private File[]      mStreamFiles = new File[8];
-    private ScreenManager mScreen;
+    private IScreenManager mScreen;
     
     public File getRoot()
     {
@@ -85,11 +85,11 @@ public class BasicRuntime
     {
         mStreams = streams;
     }
-    public ScreenManager getScreen()
+    public IScreenManager getScreen()
     {
         return mScreen;
     }
-    public void setScreen(ScreenManager screen)
+    public void setScreen(IScreenManager screen)
     {
         mScreen = screen;
     }

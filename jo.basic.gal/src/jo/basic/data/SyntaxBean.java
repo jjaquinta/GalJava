@@ -48,6 +48,9 @@ public class SyntaxBean
     public static final int LET = 1043; 
     public static final int DEBUG = 1044; 
     public static final int IF_RETURN = 1045; 
+    public static final int SUB_CALL = 1046; 
+    public static final int END_FUNCTION = 1047; 
+    public static final int EXIT_FUNCTION = 1048; 
 
     private int mType;
     private int mFirstToken;

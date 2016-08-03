@@ -59,6 +59,12 @@ public class TokenBean
     public static final int GET = 1050;
     public static final int PUT = 1051;
     public static final int DEBUG = 1052;
+    public static final int DECLARE = 1053;
+    public static final int SUB = 1054;
+    public static final int SHARED = 1055;
+    public static final int OUTPUT = 1056;
+    public static final int FUNCTION = 1057;
+    public static final int EXIT = 1058;
     /*
     public static final int WEND = 1011; 
     public static final int REPEAT = 1012; 
@@ -145,6 +151,12 @@ public class TokenBean
         KEYWORDS.put("<>", TokenBean.NOT_EQUAL);
         KEYWORDS.put(">=", TokenBean.GREATERTHAN_EQUAL);
         KEYWORDS.put("<=", TokenBean.LESSTHAN_EQUAL);
+        KEYWORDS.put("DECLARE", TokenBean.DECLARE);
+        KEYWORDS.put("SUB", TokenBean.SUB);
+        KEYWORDS.put("SHARED", TokenBean.SHARED);
+        KEYWORDS.put("OUTPUT", TokenBean.OUTPUT);
+        KEYWORDS.put("FUNCTION", TokenBean.FUNCTION);
+        KEYWORDS.put("EXIT", TokenBean.EXIT);
         KEYWORDS.put("DEBUG", TokenBean.DEBUG);
         /*
         KEYWORDS.put("NEXT", TokenBean.NEXT);

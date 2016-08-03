@@ -29,7 +29,7 @@ public class TokenizeLogic
                 int start = lp;
                 while ((lp < text.length()) && Character.isLetterOrDigit(text.charAt(lp)))
                     lp++;
-                if ((lp < text.length()) && ((text.charAt(lp) == '$') || (text.charAt(lp) == '%')))
+                if ((lp < text.length()) && ((text.charAt(lp) == '$') || (text.charAt(lp) == '%') || (text.charAt(lp) == '!') || (text.charAt(lp) == '#')))
                     lp++;
                 int end = lp;
                 String kw = text.substring(start, end);
@@ -58,6 +58,8 @@ public class TokenizeLogic
                 Integer type = TokenBean.OPERATORS.get(op);
                 if (type != null)
                     addToken(program, line, lp, ++lp, type);
+                else if ("'".equals(op))
+                    break;
                 else
                 {
                     System.err.println(line.getText());

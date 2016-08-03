@@ -3,8 +3,10 @@ package jo.basic.data;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class ProgramBean
 {
@@ -15,6 +17,7 @@ public class ProgramBean
     private Map<String, Integer> mLabels = new HashMap<String, Integer>();
     private List<ExpressionBean> mData = new ArrayList<>();
     private Map<String, FunctionBean> mFunctions = new HashMap<String, FunctionBean>();
+    private Set<String> mSubroutines = new HashSet<>();
 
     public List<LineBean> getLines()
     {
@@ -84,5 +87,15 @@ public class ProgramBean
     public void setSource(File source)
     {
         mSource = source;
+    }
+
+    public Set<String> getSubroutines()
+    {
+        return mSubroutines;
+    }
+
+    public void setSubroutines(Set<String> subroutines)
+    {
+        mSubroutines = subroutines;
     }
 }

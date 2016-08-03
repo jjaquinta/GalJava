@@ -42,7 +42,14 @@ public class RuntimeLogic
         if (!StringUtils.isTrivial(rt.getArgs()))
             ep.put("COMMAND$", rt.getArgs());
         setRuntime(rt);
-        executeSteps(ep, UNTIL_END);
+        try
+        {
+            executeSteps(ep, UNTIL_END);
+        }
+        catch (FunctionExitException e)
+        {
+            throw new RuntimeException("Unexpected function exit", e);
+        }
         unsetRuntime();
     }
     
@@ -63,7 +70,7 @@ public class RuntimeLogic
         return mRTCache.peek();
     }
     
-    public static void executeSteps(ExecutionPointer ep, int terminalCondition)
+    public static void executeSteps(ExecutionPointer ep, int terminalCondition) throws FunctionExitException
     {
         while (ep.isMore())
         {
@@ -206,6 +213,8 @@ public class RuntimeLogic
                     }
                     System.err.println(ep.line().getText());
                     ep.error("Unexpected RETURN, mode="+terminalCondition);
+                case SyntaxBean.EXIT_FUNCTION:
+                    throw new FunctionExitException();
                 case SyntaxBean.ELSE:
                 case SyntaxBean.ELSEIF_BLOCK:
                     if (terminalCondition == UNTIL_END_IF)
@@ -230,6 +239,7 @@ public class RuntimeLogic
                     System.err.println(ep.line().getText());
                     ep.error("Unexpected CASE");
                 case SyntaxBean.END_DEF:
+                case SyntaxBean.END_FUNCTION:
                     if (terminalCondition == UNTIL_END_DEF)
                         return;
                     System.err.println(ep.line().getText());
@@ -380,12 +390,16 @@ public class RuntimeLogic
         StringBuffer txt = new StringBuffer();
         @SuppressWarnings("unchecked")
         List<Object> args = (List<Object>)ep.command().getArg1();
-        for (Object o : args)
+        for (int i = 0; i < args.size(); i++)
+        {
+            Object o = args.get(i);
             if (o instanceof TokenBean)
                 switch (((TokenBean)o).getType())
                 {
-                    case TokenBean.NUMBER:
-                        stream = IntegerUtils.parseInt(((TokenBean)o).getTokenText());
+                    case TokenBean.HASH:
+                        i++;
+                        ExpressionBean expr = ((ExpressionBean)args.get(i));
+                        stream = ep.evalInt(expr);
                         break;
                     case TokenBean.COMMA:
                         txt.append(" ");
@@ -401,6 +415,7 @@ public class RuntimeLogic
                 txt.append(ep.evalString((ExpressionBean)o));
             else
                 ep.error("Unknown print argument "+o);
+        }
         boolean noNewline = (args.size() > 0) && (args.get(args.size() - 1) instanceof TokenBean) && (((TokenBean)args.get(args.size() - 1)).getType() == TokenBean.SEMICOLON);
         if (stream != null)
         {
@@ -447,6 +462,11 @@ public class RuntimeLogic
             int y1 = ep.evalInt(exprs.get(1));
             int x2 = ep.evalInt(exprs.get(2));
             int y2 = ep.evalInt(exprs.get(3));
+            if (exprs.size() > 4)
+            {
+                int color = ep.evalInt(exprs.get(4));
+                ep.rt.getScreen().color(color);
+            }
             ep.rt.getScreen().line(x1, y1, x2, y2);
         }
         else
@@ -511,7 +531,8 @@ public class RuntimeLogic
         try
         {
             String mode = (String)ep.arg1();
-            int idx = (Integer)ep.arg2();
+            ExpressionBean idxEx = (ExpressionBean)ep.arg2();
+            int idx = ep.evalInt(idxEx);
             ExpressionBean file = (ExpressionBean)ep.arg3();
             String fname = ep.evalString(file);
             closeStream(ep, idx);
@@ -547,7 +568,14 @@ public class RuntimeLogic
         {
             if (ep.arg1() instanceof Integer)
             {
-                int idx = (Integer)ep.arg1();
+                int idx;
+                if (ep.arg1() instanceof Integer)
+                    idx = (Integer)ep.arg1();
+                else
+                {
+                    VariableBean idxV = (VariableBean)ep.arg1();
+                    idx = IntegerUtils.parseInt(ep.get(idxV));
+                }
                 VariableBean var = (VariableBean)ep.arg2();
                 if (ep.rt.getStreams()[idx] instanceof BufferedReader)
                 {
@@ -575,8 +603,14 @@ public class RuntimeLogic
     
     private static void executeClose(ExecutionPointer ep)
     {
-        if (ep.arg1() != null)
+        if (ep.arg1() instanceof Integer)
             closeStream(ep, (Integer)ep.arg1());
+        else if (ep.arg1() instanceof VariableBean)
+        {
+            VariableBean var = (VariableBean)ep.arg1();
+            int idx = IntegerUtils.parseInt(ep.get(var));
+            closeStream(ep, idx);
+        }
         else
             for (int i = 0; i < ep.rt.getStreams().length; i++)
                 closeStream(ep, i);
@@ -598,7 +632,7 @@ public class RuntimeLogic
         }
     }
     
-    private static void executeGosub(ExecutionPointer ep)
+    private static void executeGosub(ExecutionPointer ep) throws FunctionExitException
     {
         String var = (String)ep.arg1();
         int step = ep.rt.getProgram().getLabels().get(var);
@@ -630,7 +664,7 @@ public class RuntimeLogic
             ep.inc();
     }
     
-    private static void executeIfGosub(ExecutionPointer ep)
+    private static void executeIfGosub(ExecutionPointer ep) throws FunctionExitException
     {
         ExpressionBean expr = (ExpressionBean)ep.arg1();
         Boolean test = BooleanUtils.parseBoolean(ep.eval(expr));
@@ -656,7 +690,7 @@ public class RuntimeLogic
         return test;
     }
     
-    private static void executeIfBlock(ExecutionPointer ep)
+    private static void executeIfBlock(ExecutionPointer ep) throws FunctionExitException
     {
         ExpressionBean expr = (ExpressionBean)ep.arg1();
         ep.inc();
@@ -689,7 +723,7 @@ public class RuntimeLogic
         executeSteps(ep, UNTIL_END_IF);
     }
     
-    private static void executeIfCommand(ExecutionPointer ep)
+    private static void executeIfCommand(ExecutionPointer ep) throws FunctionExitException
     {
         ExpressionBean expr = (ExpressionBean)ep.arg1();
         ep.inc();
@@ -781,7 +815,7 @@ public class RuntimeLogic
         ep.inc();
     }
     
-    private static void executeFor(ExecutionPointer ep)
+    private static void executeFor(ExecutionPointer ep) throws FunctionExitException
     {
         String var = (String)ep.arg1();
         ExpressionBean startExpr = (ExpressionBean)ep.arg2();
@@ -801,7 +835,7 @@ public class RuntimeLogic
         }
     }
     
-    private static void executeDoUntil(ExecutionPointer ep)
+    private static void executeDoUntil(ExecutionPointer ep) throws FunctionExitException
     {
         ExpressionBean expr = (ExpressionBean)ep.arg1();
         ep.inc();
@@ -819,7 +853,7 @@ public class RuntimeLogic
         ep.inc();
     }
     
-    private static void executeSelect(ExecutionPointer ep)
+    private static void executeSelect(ExecutionPointer ep) throws FunctionExitException
     {
         ExpressionBean expr = (ExpressionBean)ep.arg1();
         int val = ep.evalInt(expr);

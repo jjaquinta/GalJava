@@ -6,7 +6,7 @@ import java.io.IOException;
 import jo.basic.data.BasicRuntime;
 import jo.basic.logic.IOLogic;
 import jo.basic.logic.RuntimeLogic;
-import jo.basic.logic.ui.ScreenManager;
+import jo.basic.logic.ui.ScaledScreenManager;
 
 public class Run
 {
@@ -24,7 +24,8 @@ public class Run
         parseArgs();
         BasicRuntime rt = new BasicRuntime();
         rt.setRoot(mRoot);
-        rt.setScreen(new ScreenManager());
+        //rt.setScreen(new ScreenManager());
+        rt.setScreen(new ScaledScreenManager(rt.getRoot()));
         try
         {
             IOLogic.load(rt, mModule);
