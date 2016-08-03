@@ -76,6 +76,7 @@ public class ScaledScreenManager implements IScreenManager
     
     private StringBuffer    mKeyBuffer = new StringBuffer();
     private StringBuffer    mLetters = new StringBuffer();
+    private Map<Character,Integer> mLetterWidth = new HashMap<>();
     
     private JFrame          mFrame;
     private TTYPanel        mCanvas;
@@ -131,15 +132,20 @@ public class ScaledScreenManager implements IScreenManager
                 String inbuf = rdr.readLine();
                 if (inbuf == null)
                     break;
-                if ("<space>".equals(inbuf))
-                    mLetters.append(" ");
+                Character ch = null;
+                if (inbuf.toUpperCase().startsWith("<SPACE>"))
+                    ch = ' ';
                 else
-                    mLetters.append(inbuf);
-                rdr.readLine();
-                rdr.readLine();
-                rdr.readLine();
-                rdr.readLine();
-                rdr.readLine();
+                    ch = inbuf.charAt(0);
+                mLetters.append(ch);
+                int max = 0;
+                max = Math.max(max, rdr.readLine().length());
+                max = Math.max(max, rdr.readLine().length());
+                max = Math.max(max, rdr.readLine().length());
+                max = Math.max(max, rdr.readLine().length());
+                max = Math.max(max, rdr.readLine().length());
+                max -= 2;
+                mLetterWidth.put(ch, max);
             }
             rdr.close();
         }
@@ -307,7 +313,8 @@ public class ScaledScreenManager implements IScreenManager
     
     public void put(int x1, int y1, int[] ret)
     {
-        mCanvas.addElement(new DrawFinePrint(x1, y1, String.valueOf((char)ret[0])));
+        Character ch = (char)ret[0];
+        mCanvas.addElement(new DrawFinePrint(x1, y1, ch.toString(), mLetterWidth.get(ch)));
     }
     
     public void pset(int x, int y)

@@ -41,4 +41,14 @@ public class DrawShape extends DrawElem
     {
         return mShape.equals(((DrawShape)obj).mShape);
     }
+
+    public Shape getShape()
+    {
+        return mShape;
+    }
+
+    public void setShape(Shape shape)
+    {
+        mShape = shape;
+    }
 }

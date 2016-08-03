@@ -17,6 +17,7 @@ import javax.swing.JPanel;
 import jo.basic.logic.ui.elem.DrawBox;
 import jo.basic.logic.ui.elem.DrawCircle;
 import jo.basic.logic.ui.elem.DrawElem;
+import jo.basic.logic.ui.elem.DrawFill;
 import jo.basic.logic.ui.elem.DrawFinePrint;
 import jo.basic.logic.ui.elem.DrawLine;
 import jo.basic.logic.ui.elem.DrawShape;
@@ -36,9 +37,9 @@ public class TTYPanel extends JPanel
     public TTYPanel()
     {
         mElements = new ArrayList<>();
-        mBigFont = new Font(Font.MONOSPACED, Font.PLAIN, 12);
+        mBigFont = new Font(Font.SANS_SERIF, Font.PLAIN, 12);
         setFont(mBigFont);
-        mSmallFont = new Font(Font.MONOSPACED, Font.PLAIN, 8);
+        mSmallFont = new Font(Font.SANS_SERIF, Font.PLAIN, 7);
     }
     @Override
     public void paintComponent(Graphics g)
@@ -84,6 +85,7 @@ public class TTYPanel extends JPanel
             Color[][] color = new Color[mCharsHigh][mCharsWide];
             DrawBox[][] boxes = new DrawBox[mCharsHigh][mCharsWide];
             List<DrawShape> shapes = new ArrayList<>();
+            DrawFinePrint lastFP = null;
             for (int i = 0; i < mElements.size(); i++)
             {
                 DrawElem ele = mElements.get(i);
@@ -112,6 +114,15 @@ public class TTYPanel extends JPanel
                 {
                     DrawFinePrint fp = (DrawFinePrint)ele;
                     fp.setFont(mSmallFont);
+                    if (lastFP != null)
+                        if (fp.extendsFrom(lastFP))
+                        {
+                            lastFP.extendWith(fp);
+                            mElements.remove(i);
+                            i--;
+                            fp = lastFP;
+                        }
+                    lastFP = fp;
                 }
                 else if (ele instanceof DrawBox)
                 {
@@ -142,11 +153,19 @@ public class TTYPanel extends JPanel
                     mElements.remove(i);
                     i--;
                 }
-//                else if (ele instanceof DrawFill)
-//                {
-//                    if (mElements.get(i - 1) instanceof DrawCircle)
-//                        ((DrawCircle)mElements.get(i - 1)).setFilled(true);
-//                }
+                else if (ele instanceof DrawFill)
+                {
+                    DrawFill df = (DrawFill)ele;
+                    for (int j = shapes.size() - 1; j >= 0; j--)
+                    {
+                        DrawShape shape = shapes.get(j);
+                        if (shape.getShape().contains(df.getX(), df.getY()))
+                        {
+                            shape.setFilled(true);
+                            break;
+                        }
+                    }
+                }
             }
             optimizeShapes(shapes);
             optimizeBoxes(boxes);
@@ -213,7 +232,10 @@ public class TTYPanel extends JPanel
                 if ((scr[y][x] != 0) && (scr[y][x] != ' '))
                 {
                     int x1 = x++;
-                    while ((x < mCharsWide) && (scr[y][x] != 0) && (scr[y][x] != ' ') && (color[y][x1].equals(color[y][x])))
+                    while ((x < mCharsWide) 
+                            && (scr[y][x] != 0) 
+                            && ((scr[y][x] != ' ') || (scr[y][x+1] != ' ')) 
+                            && (color[y][x1].equals(color[y][x])))
                         x++;
                     int l = x - x1;
                     DrawString ds = new DrawString(x1, y, color[y][x1], new String(scr[y], x1, l), 640/mCharsWide, 480/mCharsHigh);
