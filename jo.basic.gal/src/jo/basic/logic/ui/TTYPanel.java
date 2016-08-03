@@ -83,7 +83,7 @@ public class TTYPanel extends JPanel
             char[][] scr = new char[mCharsHigh][mCharsWide];
             Color[][] color = new Color[mCharsHigh][mCharsWide];
             DrawBox[][] boxes = new DrawBox[mCharsHigh][mCharsWide];
-            List<DrawShape> mShapes = new ArrayList<>();
+            List<DrawShape> shapes = new ArrayList<>();
             for (int i = 0; i < mElements.size(); i++)
             {
                 DrawElem ele = mElements.get(i);
@@ -125,14 +125,20 @@ public class TTYPanel extends JPanel
                 else if (ele instanceof DrawLine)
                 {
                     Shape path = findLine(i);
-                    mShapes.add(new DrawShape(path, ((DrawLine)ele).getColor()));
+                    shapes.add(new DrawShape(path, ((DrawLine)ele).getColor()));
                     i--;
                 }
                 else if (ele instanceof DrawCircle)
                 {
                     DrawCircle circ = (DrawCircle)ele;
                     Shape path = new Ellipse2D.Double(circ.getX() - circ.getR(), circ.getY() - circ.getR(), circ.getR()*2, circ.getR()*2);
-                    mShapes.add(new DrawShape(path, circ.getColor()));
+                    shapes.add(new DrawShape(path, circ.getColor()));
+                    mElements.remove(i);
+                    i--;
+                }
+                else if (ele instanceof DrawShape)
+                {
+                    shapes.add((DrawShape)ele);
                     mElements.remove(i);
                     i--;
                 }
@@ -142,10 +148,27 @@ public class TTYPanel extends JPanel
 //                        ((DrawCircle)mElements.get(i - 1)).setFilled(true);
 //                }
             }
-            mElements.addAll(0, mShapes);
+            optimizeShapes(shapes);
             optimizeBoxes(boxes);
             optimizeChars(scr, color);
         }
+    }
+    private void optimizeShapes(List<DrawShape> shapes)
+    {
+        for (int i = 1; i < shapes.size(); i++)
+        {
+            DrawShape si = shapes.get(i);
+            for (int j = 0; j < i; j++)
+            {
+                DrawShape sj = shapes.get(j);
+                if (sj.equals(si))
+                {
+                    shapes.remove(j);
+                    i--;
+                }
+            }
+        }
+        mElements.addAll(0, shapes);
     }
     
     private Shape findLine(int startIdx)
