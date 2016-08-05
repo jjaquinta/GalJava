@@ -76,6 +76,7 @@ public class ExecutionPointer implements IExprProps
     
     public void put(String var, Object val)
     {
+        //System.out.println("Putting "+var+" -> "+val);
         rt.getVariables().put(var.toUpperCase(), val);
     }
     
@@ -83,7 +84,16 @@ public class ExecutionPointer implements IExprProps
     {
         if (var.equalsIgnoreCase("INKEY$"))
             return rt.getScreen().inkey();
-        return rt.getVariables().get(var.toUpperCase());
+        else if (var.equalsIgnoreCase("FREEFILE"))
+        {
+            for (int i = 0; i < rt.getStreams().length; i++)
+                if (rt.getStreams()[i] == null)
+                    return i;
+            throw new RuntimeException("No free streams!");
+        }
+        Object ret = rt.getVariables().get(var.toUpperCase());
+        //System.out.println("Getting "+var+" -> "+ret);
+        return ret;
     }
     
     public Object get(VariableBean var)
@@ -142,7 +152,7 @@ public class ExecutionPointer implements IExprProps
         Object val = eval(expr);
         if (val instanceof Number)
             return ((Number)val).intValue();
-        error("Expected int value, not "+val);
+        error("Expected int value for "+expr.toString(rt.getProgram())+", not "+val);
         return 0;
     }
     
@@ -201,9 +211,14 @@ public class ExecutionPointer implements IExprProps
     {
         error(msg, null);
     }
-        
+
+    private boolean mInError = false;
+    
     public void error(String msg, Exception e) throws RuntimeException
     {
+        if (mInError == true)
+            return;
+        mInError = true;
         SyntaxBean cmd = command();
         TokenBean firstToken = rt.getProgram().getTokens().get(cmd.getFirstToken());
         TokenBean lastToken = rt.getProgram().getTokens().get(cmd.getLastToken());
@@ -215,10 +230,17 @@ public class ExecutionPointer implements IExprProps
         for (int i = 0; i < lastToken.getCharEnd() - firstToken.getCharStart(); i++)
             System.err.print("~");
         System.err.println();
-        dumpVars(cmd.getArg1());
-        dumpVars(cmd.getArg2());
-        dumpVars(cmd.getArg3());
-        dumpVars(cmd.getArg4());
+        try
+        {
+            dumpVars(cmd.getArg1());
+            dumpVars(cmd.getArg2());
+            dumpVars(cmd.getArg3());
+            dumpVars(cmd.getArg4());
+        }
+        catch (Exception e2)
+        {
+        }
+        mInError = false;
         throw new RuntimeException(msg, e);
     }
     
@@ -227,7 +249,15 @@ public class ExecutionPointer implements IExprProps
         if (v instanceof VariableBean)
         {
             VariableBean var = (VariableBean)v;
-            System.err.println(var.getName()+"='"+get(var)+"'");
+            System.err.print(var.getName());
+            try
+            {
+                System.err.println("='"+get(var)+"'");
+            }
+            catch (Exception e)
+            {
+                System.err.println("=???");
+            }
         }
     }
 }

@@ -4,9 +4,11 @@ import java.awt.Toolkit;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.List;
@@ -14,6 +16,7 @@ import java.util.Stack;
 
 import jo.basic.data.BasicRuntime;
 import jo.basic.data.ExpressionBean;
+import jo.basic.data.FunctionBean;
 import jo.basic.data.SyntaxBean;
 import jo.basic.data.TokenBean;
 import jo.basic.data.VariableBean;
@@ -100,6 +103,7 @@ public class RuntimeLogic
                     executeFor(ep);
                     break;
                 case SyntaxBean.DO_UNTIL:
+                case SyntaxBean.DO_WHILE:
                     executeDoUntil(ep);
                     break;
                 case SyntaxBean.SELECT:
@@ -120,6 +124,9 @@ public class RuntimeLogic
                 case SyntaxBean.LINE_INPUT:
                     executeLineInput(ep);
                     break;
+                case SyntaxBean.PUT_DATA:
+                    executePutData(ep);
+                    break;
                 case SyntaxBean.CLOSE:
                     executeClose(ep);
                     break;
@@ -128,6 +135,9 @@ public class RuntimeLogic
                     break;
                 case SyntaxBean.IF_GOSUB:
                     executeIfGosub(ep);
+                    break;
+                case SyntaxBean.SUB_CALL:
+                    executeSubCall(ep);
                     break;
                 case SyntaxBean.IF_BLOCK:
                     executeIfBlock(ep);
@@ -189,6 +199,9 @@ public class RuntimeLogic
                 case SyntaxBean.SOUND:
                     executeSound(ep);
                     break;
+                case SyntaxBean.OUT:
+                    ep.inc(); // NOP
+                    break;
                 case SyntaxBean.NEXT:
                     if (terminalCondition == UNTIL_NEXT)
                     {
@@ -249,6 +262,11 @@ public class RuntimeLogic
                         return;
                     System.err.println(ep.line().getText());
                     ep.error("Unexpected END_SELECT");
+                case SyntaxBean.END_SUB:
+                    if (terminalCondition == UNTIL_END_DEF)
+                        return;
+                    System.err.println(ep.line().getText());
+                    ep.error("Unexpected END_SUB");
                 case SyntaxBean.END_PROGRAM:
                     if (terminalCondition == UNTIL_END)
                         return;
@@ -548,6 +566,11 @@ public class RuntimeLogic
                 BufferedWriter wtr = new BufferedWriter(new FileWriter(f));
                 ep.rt.getStreams()[idx] = wtr;
             }
+            else if ("b".equalsIgnoreCase(mode))
+            {
+                FileOutputStream os = new FileOutputStream(f);
+                ep.rt.getStreams()[idx] = os;
+            }
             else if ("r".equalsIgnoreCase(mode))
             {
                 ep.rt.getStreams()[idx] = f; // test for exists
@@ -566,16 +589,9 @@ public class RuntimeLogic
     {
         try
         {
-            if (ep.arg1() instanceof Integer)
+            if (ep.arg1() instanceof ExpressionBean)
             {
-                int idx;
-                if (ep.arg1() instanceof Integer)
-                    idx = (Integer)ep.arg1();
-                else
-                {
-                    VariableBean idxV = (VariableBean)ep.arg1();
-                    idx = IntegerUtils.parseInt(ep.get(idxV));
-                }
+                int idx = ep.evalInt((ExpressionBean)ep.arg1());
                 VariableBean var = (VariableBean)ep.arg2();
                 if (ep.rt.getStreams()[idx] instanceof BufferedReader)
                 {
@@ -593,6 +609,30 @@ public class RuntimeLogic
                 String val = ep.rt.getScreen().input(prompt);
                 ep.put(var, val);
             }
+            ep.inc();
+        }
+        catch (IOException e)
+        {
+            ep.error(e);
+        }
+    }
+    
+    private static void executePutData(ExecutionPointer ep)
+    {
+        try
+        {
+            int idx = ep.evalInt((ExpressionBean)ep.arg1());
+            int off = (Integer)ep.arg2();
+            String data = ep.eval((ExpressionBean)ep.arg3()).toString();
+            byte[] bdata = data.getBytes("CP437");
+            if (ep.rt.getStreams()[idx] instanceof OutputStream)
+            {
+                if (off > 0)
+                    ; // TODO: seek
+                ((OutputStream)ep.rt.getStreams()[idx]).write(bdata);
+            }
+            else
+                ep.error("Stream #"+idx+" not for input");
             ep.inc();
         }
         catch (IOException e)
@@ -625,6 +665,8 @@ public class RuntimeLogic
                 ((Reader)ep.rt.getStreams()[idx]).close();
             else if (ep.rt.getStreams()[idx] instanceof Writer)
                 ((Writer)ep.rt.getStreams()[idx]).close();
+            else if (ep.rt.getStreams()[idx] instanceof OutputStream)
+                ((OutputStream)ep.rt.getStreams()[idx]).close();
         }
         catch (IOException e)
         {
@@ -680,6 +722,18 @@ public class RuntimeLogic
         }
         else
             ep.inc();
+    }
+    
+    @SuppressWarnings("unchecked")
+    private static void executeSubCall(ExecutionPointer ep) throws FunctionExitException
+    {
+        List<ExpressionBean> exprs = (List<ExpressionBean>)ep.arg1();
+        Object[] args = new Object[exprs.size()];
+        for (int i = 0; i < exprs.size(); i++)
+            args[i] = ep.eval(exprs.get(i));
+        FunctionBean func = getFunction((String)ep.arg2());
+        ep.inc();
+        invokeFunction(ep.rt, func, args);
     }
     
     private static boolean executeIfReturn(ExecutionPointer ep)
@@ -788,6 +842,22 @@ public class RuntimeLogic
         }
     }
     
+    private static void skipToNext(ExecutionPointer ep)
+    {
+        int depth = 0;
+        for (;;)
+        {
+            int type = ep.command().getType();
+            ep.inc();
+            if ((depth == 0) && ((type == SyntaxBean.NEXT)))
+                break;
+            else if (type == SyntaxBean.FOR)
+                depth++;
+            else if (type == SyntaxBean.NEXT)
+                depth--;
+        }
+    }
+    
     private static void skipToEndIf(ExecutionPointer ep)
     {
         int depth = 0;
@@ -826,6 +896,11 @@ public class RuntimeLogic
         int step = (stepExpr != null) ? ep.evalInt(stepExpr) : 1;
         ep.inc();
         int loopTop = ep.rt.getExecutionPoint();
+        if (start > end)
+        {
+            skipToNext(ep);
+            return;
+        }
         for (int i = start; i <= end; i += step)
         {
             //System.out.println("for loop at "+i+" of "+end);
@@ -941,21 +1016,33 @@ public class RuntimeLogic
     private static void executeDim(ExecutionPointer ep)
     {
         String var = (String)ep.arg1();
+        Object val = ep.get(var);
+        if (val != null)
+        {
+            ep.inc();
+            return; // already dimmed
+        }
         @SuppressWarnings("unchecked")
-        List<Integer> dims = (List<Integer>)ep.arg2();
+        List<ExpressionBean> dims = (List<ExpressionBean>)ep.arg2();
         if ((dims == null) || (dims.size() == 0))
-            ep.put(var, null);
+        {
+            if (var.endsWith("$"))
+                val = "";
+            else
+                val = 0;
+        }
         else if (dims.size() == 1)
-            ep.put(var, new Object[dims.get(0)+1]);
+            val = new Object[ep.evalInt(dims.get(0))+1];
         else if (dims.size() == 2)
-            ep.put(var, new Object[dims.get(0)+1][dims.get(1)+1]);
+            val = new Object[ep.evalInt(dims.get(0))+1][ep.evalInt(dims.get(1))+1];
         else if (dims.size() == 3)
-            ep.put(var, new Object[dims.get(0)+1][dims.get(1)+1][dims.get(2)+1]);
+            val = new Object[ep.evalInt(dims.get(0))+1][ep.evalInt(dims.get(1))+1][ep.evalInt(dims.get(2))+1];
         else
         {
             System.err.println(ep.line().getText());
             ep.error("Can't handle #"+ep.command().getType());
         }
+        ep.put(var, val);
         ep.inc();
     }
     
@@ -972,6 +1059,73 @@ public class RuntimeLogic
         ExpressionBean expr = (ExpressionBean)ep.arg1();
         System.err.println(ep.eval(expr));
         ep.inc();
+    }
+
+    public static FunctionBean getFunction(String name)
+    {
+        BasicRuntime rt = RuntimeLogic.getRuntime();
+        FunctionBean val = rt.getProgram().getFunctions().get(name.toUpperCase());
+        if (val != null)
+            return val;
+        for (FunctionBean v : rt.getProgram().getFunctions().values())
+            if (RuntimeLogic.nameMatch(name, v.getName()))
+                return v;
+        return null;
+    }
+
+    private static int getExecutionPoint(String name)
+    {
+        BasicRuntime rt = RuntimeLogic.getRuntime();
+        Integer ep = rt.getProgram().getLabels().get(name.toUpperCase());
+        if (ep != null)
+            return ep;
+        for (String v : rt.getProgram().getLabels().keySet())
+            if (nameMatch(name, v))
+                return rt.getProgram().getLabels().get(v);
+        throw new RuntimeException("No such label '"+name+"'");
+    }
+
+    public static boolean nameMatch(String name1, String name2)
+    {
+        if (!Character.isLetterOrDigit(name1.charAt(name1.length() - 1)))
+            name1 = name1.substring(0, name1.length() - 1);
+        if (!Character.isLetterOrDigit(name2.charAt(name2.length() - 1)))
+            name2 = name2.substring(0, name2.length() - 1);
+        return name1.equalsIgnoreCase(name2);
+    }
+
+    public static Object invokeFunction(BasicRuntime rt, FunctionBean func,
+            Object[] args)
+    {
+        ExecutionPointer ep = new ExecutionPointer(rt);
+        for (int i = 0; i < args.length; i++)
+        {
+            VariableBean var = func.getArgs().get(i);
+            ep.put(var, args[i]);
+        }
+        if (func.getCode() != null)
+        {
+            Object val = ep.eval(func.getCode());
+            return val;
+        }
+        else
+        {
+            int oldExecutionPoint = rt.getExecutionPoint();
+            int newExecutionPoint = getExecutionPoint(func.getName());
+            rt.setExecutionPoint(newExecutionPoint);
+            try
+            {
+                RuntimeLogic.executeSteps(ep, RuntimeLogic.UNTIL_END_DEF);
+            }
+            catch (FunctionExitException e)
+            {
+                ; // NOOP
+            }
+            Object val = ep.get(func.getName());
+            rt.setExecutionPoint(oldExecutionPoint);
+            rt.getVariables().remove(func.getName().toUpperCase());
+            return val;
+        }
     }
 }
 

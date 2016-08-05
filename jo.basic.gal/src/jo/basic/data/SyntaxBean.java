@@ -51,6 +51,11 @@ public class SyntaxBean
     public static final int SUB_CALL = 1046; 
     public static final int END_FUNCTION = 1047; 
     public static final int EXIT_FUNCTION = 1048; 
+    public static final int DO_WHILE = 1049; 
+    public static final int EXIT_DO = 1050; 
+    public static final int END_SUB = 1051; 
+    public static final int PUT_DATA = 1052; 
+    public static final int OUT = 1053; 
 
     private int mType;
     private int mFirstToken;

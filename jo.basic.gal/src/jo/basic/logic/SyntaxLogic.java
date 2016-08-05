@@ -11,6 +11,7 @@ import jo.basic.data.ProgramBean;
 import jo.basic.data.SyntaxBean;
 import jo.basic.data.TokenBean;
 import jo.basic.data.VariableBean;
+import jo.util.utils.obj.IntegerUtils;
 
 public class SyntaxLogic
 {
@@ -81,6 +82,9 @@ public class SyntaxLogic
                 case TokenBean.PALETTE:
                     parseExprList(tp, SyntaxBean.PALETTE);
                     break;
+                case TokenBean.OUT:
+                    parseExprList(tp, SyntaxBean.OUT);
+                    break;
                 case TokenBean.COLOR:
                     parseColor(tp);
                     break;
@@ -99,11 +103,15 @@ public class SyntaxLogic
                 case TokenBean.LOOP:
                     parseSingleton(tp, TokenBean.LOOP, SyntaxBean.LOOP);
                     break;
+                case TokenBean.WEND:
+                    parseSingleton(tp, TokenBean.WEND, SyntaxBean.LOOP);
+                    break;
                 case TokenBean.END:
                     parseEnd(tp);
                     break;
                 case TokenBean.DEF:
                 case TokenBean.FUNCTION:
+                case TokenBean.SUB:
                     parseDef(tp);
                     break;
                 case TokenBean.EXIT:
@@ -114,6 +122,9 @@ public class SyntaxLogic
                     break;
                 case TokenBean.DO:
                     parseDo(tp);
+                    break;
+                case TokenBean.WHILE:
+                    parseWhile(tp);
                     break;
                 case TokenBean.DIM:
                     parseDim(tp);
@@ -187,7 +198,7 @@ public class SyntaxLogic
         tp.addSyntax(SyntaxBean.SWAP, var1, var2);
     }
 
-    private static void parseExprList(TokenPointer tp, int syntaxType) throws IOException
+    private static SyntaxBean parseExprList(TokenPointer tp, int syntaxType) throws IOException
     {
         tp.mark();
         tp.inc();
@@ -203,7 +214,7 @@ public class SyntaxLogic
                 break;
             palette.add(tp.parseExpression());
         }
-        tp.addSyntax(syntaxType, palette);
+        return tp.addSyntax(syntaxType, palette);
     }
 
     private static void parseLet(TokenPointer tp) throws IOException
@@ -219,7 +230,8 @@ public class SyntaxLogic
         }
         else if (tp.program.getSubroutines().contains(arg1.getName().toUpperCase()))
         {
-            parseExprList(tp, SyntaxBean.SUB_CALL);
+            SyntaxBean subCall = parseExprList(tp, SyntaxBean.SUB_CALL);
+            subCall.setArg2(arg1.getName());
         }
     }
 
@@ -399,8 +411,22 @@ public class SyntaxLogic
             ExpressionBean expr1 = tp.parseExpression();
             tp.addSyntax(SyntaxBean.DO_UNTIL, expr1);
         }
+        else if (tp.isType(TokenBean.WHILE))
+        {
+            tp.assertType(TokenBean.WHILE);
+            ExpressionBean expr1 = tp.parseExpression();
+            tp.addSyntax(SyntaxBean.DO_WHILE, expr1);
+        }
         else
             tp.syntaxError();
+    }
+
+    private static void parseWhile(TokenPointer tp) throws IOException
+    {
+        tp.mark();
+        tp.inc();
+        ExpressionBean expr1 = tp.parseExpression();
+        tp.addSyntax(SyntaxBean.DO_WHILE, expr1);
     }
 
     private static void parseSelect(TokenPointer tp) throws IOException
@@ -416,12 +442,11 @@ public class SyntaxLogic
     {
         tp.mark();
         tp.inc();
-        if (tp.isType(TokenBean.INPUT) 
-                && tp.isType(1, TokenBean.HASH) && tp.isType(2, TokenBean.NUMBER)
-                && tp.isType(3, TokenBean.COMMA) && tp.isType(4, TokenBean.VARIABLE))
+        if (tp.isType(TokenBean.INPUT) && tp.isType(1, TokenBean.HASH))
         {
-            Integer arg1 = Integer.parseInt(tp.token(2).getTokenText());
-            tp.inc(4);
+            tp.inc(2);
+            ExpressionBean arg1 = tp.parseExpression();
+            tp.assertType(TokenBean.COMMA);
             VariableBean arg2 = tp.parseVariable();
             tp.addSyntax(SyntaxBean.LINE_INPUT, arg1, arg2);
         }
@@ -498,17 +523,34 @@ public class SyntaxLogic
     {
         tp.mark();
         tp.inc();
-        List<ExpressionBean> arg1 = new ArrayList<>();
-        tp.assertType(TokenBean.LPAREN);
-        arg1.add(tp.parseExpression());
-        tp.assertType(TokenBean.COMMA);
-        arg1.add(tp.parseExpression());
-        tp.assertType(TokenBean.RPAREN);
-        tp.assertType(TokenBean.COMMA);
-        VariableBean arg2 = tp.parseVariable();
-        tp.assertType(TokenBean.COMMA);
-        tp.assertType(TokenBean.PSET);
-        tp.addSyntax(SyntaxBean.PUT_IMAGE, arg1, arg2);
+        if (tp.isType(TokenBean.LPAREN))
+        {
+            List<ExpressionBean> arg1 = new ArrayList<>();
+            tp.assertType(TokenBean.LPAREN);
+            arg1.add(tp.parseExpression());
+            tp.assertType(TokenBean.COMMA);
+            arg1.add(tp.parseExpression());
+            tp.assertType(TokenBean.RPAREN);
+            tp.assertType(TokenBean.COMMA);
+            VariableBean arg2 = tp.parseVariable();
+            tp.assertType(TokenBean.COMMA);
+            tp.assertType(TokenBean.PSET);
+            tp.addSyntax(SyntaxBean.PUT_IMAGE, arg1, arg2);
+        }
+        else if (tp.isType(TokenBean.HASH))
+        {
+            tp.inc();
+            ExpressionBean arg1 = tp.parseExpression();
+            tp.assertType(TokenBean.COMMA);
+            Integer arg2 = -1;
+            if (tp.isType(TokenBean.NUMBER))
+                arg2 = IntegerUtils.parseInt(tp.assertType(TokenBean.NUMBER).getTokenText());
+            tp.assertType(TokenBean.COMMA);
+            ExpressionBean arg3 = tp.parseExpression();
+            tp.addSyntax(SyntaxBean.PUT_DATA, arg1, arg2, arg3);
+        }
+        else
+            tp.syntaxError();
     }
 
     private static void parseDef(TokenPointer tp) throws IOException
@@ -547,8 +589,13 @@ public class SyntaxLogic
     {
         tp.mark();
         tp.inc();
-        tp.assertType(TokenBean.FUNCTION);
-        tp.addSyntax(SyntaxBean.EXIT_FUNCTION);
+        if (tp.isType(TokenBean.FUNCTION))
+            tp.addSyntax(SyntaxBean.EXIT_FUNCTION);
+        else if (tp.isType(TokenBean.DO))
+            tp.addSyntax(SyntaxBean.EXIT_DO);
+        else
+            tp.syntaxError();
+        tp.inc();
     }
 
     private static void parseDeclare(TokenPointer tp) throws IOException
@@ -568,20 +615,11 @@ public class SyntaxLogic
     {
         tp.mark();
         tp.inc();
-        if (tp.isType(TokenBean.HASH) && tp.isType(1, TokenBean.NUMBER)
-                && tp.isType(2, TokenBean.COMMA))
-        {
-            Integer arg1 = Integer.parseInt(tp.token(1).getTokenText());
-            tp.inc(3);
-            VariableBean arg2 = tp.parseVariable();
-            tp.addSyntax(SyntaxBean.LINE_INPUT, arg1, arg2);
-        }
-        else if (tp.isType(TokenBean.HASH) && tp.isType(1, TokenBean.VARIABLE)
-                && tp.isType(2, TokenBean.COMMA))
+        if (tp.isType(TokenBean.HASH))
         {
             tp.inc();
-            VariableBean arg1 = tp.parseVariable();
-            tp.inc();
+            ExpressionBean arg1 = tp.parseExpression();
+            tp.assertType(TokenBean.COMMA);
             VariableBean arg2 = tp.parseVariable();
             tp.addSyntax(SyntaxBean.LINE_INPUT, arg1, arg2);
         }
@@ -635,48 +673,48 @@ public class SyntaxLogic
         tp.mark();
         tp.inc();
         String arg1 = null;
-        List<Integer> arg2 = new ArrayList<>();
         if (tp.isType(TokenBean.SHARED))
-        {   // everything shared by default
-            while (!tp.isType(TokenBean.END_OF_COMMAND))
-                tp.inc();
-            return;
-        }
-        arg1 = tp.assertType(TokenBean.VARIABLE).getTokenText();
-        if (tp.isType(TokenBean.END_OF_COMMAND))
-            return;
-        tp.assertType(TokenBean.LPAREN);
+            tp.inc(); // everything shared by default
         for (;;)
         {
-            if (!tp.moreTokens())
-                tp.syntaxError();
-            TokenBean tok = tp.token();
-            if (tok.getType() == TokenBean.RPAREN)
+            arg1 = tp.assertType(TokenBean.VARIABLE).getTokenText();
+            List<ExpressionBean> arg2 = new ArrayList<>();
+            if (tp.isType(TokenBean.LPAREN))
             {
                 tp.inc();
+                for (;;)
+                {
+                    if (!tp.moreTokens())
+                        tp.syntaxError();
+                    TokenBean tok = tp.token();
+                    if (tok.getType() == TokenBean.RPAREN)
+                    {
+                        tp.inc();
+                        break;
+                    }
+                    if (tok.getType() == TokenBean.COMMA)
+                    {
+                        tp.inc();
+                        continue;
+                    }
+                    arg2.add(tp.parseExpression());
+                }        
+                if (tp.isType(TokenBean.AS))
+                {
+                    tp.inc();
+                    if (tp.isType(TokenBean.INTEGER))
+                        tp.inc();
+                }
+            }
+            tp.addSyntax(SyntaxBean.DIM, arg1, arg2);
+            if (tp.isType(TokenBean.END_OF_COMMAND))
                 break;
-            }
-            if (tok.getType() == TokenBean.COMMA)
+            if (tp.isType(TokenBean.COMMA))
             {
                 tp.inc();
-                continue;
+                tp.mark();
             }
-            if (tok.getType() == TokenBean.NUMBER)
-            {
-                arg2.add(Integer.parseInt(tok.getTokenText()));
-                tp.inc();
-                continue;
-            }
-            tp.syntaxError();
-        }        
-        if (tp.isType(TokenBean.AS))
-        {
-            tp.inc();
-            if (tp.isType(TokenBean.INTEGER))
-                tp.inc();
         }
-        tp.assertType(TokenBean.END_OF_COMMAND);
-        tp.addSyntax(SyntaxBean.DIM, arg1, arg2);
     }
 
     private static void parseData(TokenPointer tp) throws IOException
@@ -822,10 +860,14 @@ public class SyntaxLogic
                 arg1 = "i";
             else if (tp.isType(TokenBean.OUTPUT))
                 arg1 = "o";
+            else if (tp.isType(TokenBean.BINARY))
+                arg1 = "b";
             else
                 tp.syntaxError();
             tp.inc();
             tp.assertType(TokenBean.AS);
+            if (tp.isType(TokenBean.HASH))
+                tp.inc();
             ExpressionBean arg2 = tp.parseExpression();
             tp.addSyntax(SyntaxBean.OPEN, arg1, arg2, arg3);
         }
@@ -909,6 +951,12 @@ public class SyntaxLogic
             tp.inc(2);
             tp.addSyntax(SyntaxBean.END_FUNCTION);
         }
+        else if (tp.ifTokenMatch(TokenBean.END, TokenBean.SUB))
+        {
+            tp.mark();
+            tp.inc(2);
+            tp.addSyntax(SyntaxBean.END_SUB);
+        }
         else
             tp.syntaxError();
     }
@@ -950,7 +998,7 @@ class TokenPointer
         return var;
     }
 
-    public void addSyntax(int syntaxType, Object... args)
+    public SyntaxBean addSyntax(int syntaxType, Object... args)
     {
         SyntaxBean s = new SyntaxBean();
         s.setType(syntaxType);
@@ -966,6 +1014,7 @@ class TokenPointer
             s.setArg4(args[3]);
         program.getSyntax().add(s);
         //System.out.println("Adding "+syntaxType);
+        return s;
    }
 
     public boolean moreTokens()
@@ -1078,6 +1127,7 @@ class TokenPointer
             case TokenBean.OR:
             case TokenBean.AND:
             case TokenBean.MOD:
+            case TokenBean.NOT:
             case TokenBean.NOT_EQUAL:
             case TokenBean.GREATERTHAN_EQUAL:
             case TokenBean.LESSTHAN_EQUAL:

@@ -21,8 +21,10 @@ public class TokenBean
     public static final int TO = 1008;
     public static final int STEP = 1009; 
     public static final int NEXT = 1010;
+    public static final int WEND = 1011; 
     public static final int DO = 1013; 
     public static final int LOOP = 1014;
+    public static final int WHILE = 1015;
     public static final int GOTO = 1017;
     public static final int UNTIL = 1016;
     public static final int GOSUB = 1018;
@@ -65,10 +67,10 @@ public class TokenBean
     public static final int OUTPUT = 1056;
     public static final int FUNCTION = 1057;
     public static final int EXIT = 1058;
+    public static final int BINARY = 1059;
+    public static final int OUT = 1060;
     /*
-    public static final int WEND = 1011; 
     public static final int REPEAT = 1012; 
-    public static final int WHILE = 1015;
     public static final int FN = 1021;
     */
     // operators
@@ -89,6 +91,7 @@ public class TokenBean
     public static final int OR = 2015;
     public static final int AND = 2016;
     public static final int MOD = 2017;
+    public static final int NOT = 2018;
     // synthesized operators
     public static final int NOT_EQUAL = 3001;
     public static final int GREATERTHAN_EQUAL = 3002;
@@ -148,6 +151,7 @@ public class TokenBean
         KEYWORDS.put("OR", TokenBean.OR);
         KEYWORDS.put("AND", TokenBean.AND);
         KEYWORDS.put("MOD", TokenBean.MOD);
+        KEYWORDS.put("NOT", TokenBean.NOT);
         KEYWORDS.put("<>", TokenBean.NOT_EQUAL);
         KEYWORDS.put(">=", TokenBean.GREATERTHAN_EQUAL);
         KEYWORDS.put("<=", TokenBean.LESSTHAN_EQUAL);
@@ -158,11 +162,12 @@ public class TokenBean
         KEYWORDS.put("FUNCTION", TokenBean.FUNCTION);
         KEYWORDS.put("EXIT", TokenBean.EXIT);
         KEYWORDS.put("DEBUG", TokenBean.DEBUG);
-        /*
-        KEYWORDS.put("NEXT", TokenBean.NEXT);
-        KEYWORDS.put("WEND", TokenBean.WEND); 
-        KEYWORDS.put("REPEAT", TokenBean.REPEAT); 
         KEYWORDS.put("WHILE", TokenBean.WHILE);
+        KEYWORDS.put("BINARY", TokenBean.BINARY);
+        KEYWORDS.put("WEND", TokenBean.WEND); 
+        KEYWORDS.put("OUT", TokenBean.OUT); 
+        /*
+        KEYWORDS.put("REPEAT", TokenBean.REPEAT); 
         KEYWORDS.put("FN", TokenBean.FN);
         */
     }

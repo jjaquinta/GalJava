@@ -16,6 +16,16 @@ public class ExpressionBean
         return t;
     }
     
+    public String toString(ProgramBean program)
+    {
+        TokenBean first = program.getTokens().get(mFirstToken);
+        TokenBean last = program.getTokens().get(mLastToken);
+        if (first.getLine() == last.getLine())
+            return first.getLine().getText().substring(first.getCharStart(), last.getCharStart());
+        else
+            return first.getLine().getText().substring(first.getCharStart()) + last.getLine().getText().substring(0, last.getCharStart());
+    }
+    
     public int getFirstToken()
     {
         return mFirstToken;

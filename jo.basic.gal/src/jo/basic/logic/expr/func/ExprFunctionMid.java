@@ -7,7 +7,7 @@ public class ExprFunctionMid extends ExprFunction
 {
     public ExprFunctionMid()
     {
-        addArg("mid$", 3, 3);
+        addArg("mid$", 2, 3);
     }
 
     @Override
@@ -15,12 +15,17 @@ public class ExprFunctionMid extends ExprFunction
     {
         String str = args[0].toString();
         int start = IntegerUtils.parseInt(args[1]);
-        int len = IntegerUtils.parseInt(args[2]);
-        if (str.length() > start - 1)
-            str = str.substring(start - 1);
-        if (str.length() <= len)
-            return str;
+        if (args.length == 3)
+        {
+            int len = IntegerUtils.parseInt(args[2]);
+            if (str.length() > start - 1)
+                str = str.substring(start - 1);
+            if (str.length() <= len)
+                return str;
+            else
+                return str.substring(0, len);
+        }
         else
-            return str.substring(0, len);
+            return str.substring(start - 1);
     }
 }

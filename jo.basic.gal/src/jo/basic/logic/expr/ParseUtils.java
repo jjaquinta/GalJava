@@ -140,6 +140,7 @@ public class ParseUtils
             case TokenBean.OR:
             case TokenBean.AND:
             case TokenBean.MOD:
+            case TokenBean.NOT:
             case TokenBean.NOT_EQUAL:
             case TokenBean.GREATERTHAN_EQUAL:
             case TokenBean.LESSTHAN_EQUAL:

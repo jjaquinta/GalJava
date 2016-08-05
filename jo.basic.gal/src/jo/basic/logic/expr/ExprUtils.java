@@ -119,8 +119,21 @@ public class ExprUtils
     public static Object evalObject(List<TokenBean> toks, IExprProps props) throws ExpressionEvaluationException
     {
         ExprUtils.preProcess(toks);
+        boolean not = false;
+        if (toks.get(0).getType() == TokenBean.NOT)
+        {
+            toks.remove(0);
+            not = true;
+        }
         ParseNode root = ParseUtils.parse(toks);
         Object ret = eval(root, props, true);
+        if (not)
+        {
+            if (ret instanceof Boolean)
+                ret = !((Boolean)ret);
+            else if (ret instanceof Integer)
+                ret = (((Integer)ret) == 0);
+        }
         //DebugUtils.info(expr + " = "+ret);
         return ret;
     }
@@ -264,7 +277,8 @@ public class ExprUtils
                 tok.remove(i);
                 tok.add(i, ne);
             }
-            else if ((i == 0) && (tok.get(i).getType() == TokenBean.SUBTRACT) && (tok.get(i+1).getType() == TokenBean.VARIABLE))
+            else if ((i == 0) && (tok.get(i).getType() == TokenBean.SUBTRACT) && 
+                    ((tok.get(i+1).getType() == TokenBean.VARIABLE) || (tok.get(i+1).getType() == TokenBean.LPAREN)))
             {
                 TokenBean zero = new TokenBean();
                 zero.setType(TokenBean.NUMBER);
